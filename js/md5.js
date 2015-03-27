@@ -37,7 +37,7 @@ define([
     var VERTEX_ELEMENTS = 11; // 3 Pos, 2 UV, 3 Norm, 3 Tangent
     var VERTEX_STRIDE = 44;
 
-    var useSIMD = true;
+    var useSIMD = false;
     
     var Md5Mesh = function() {
         this.joints = null;
@@ -82,17 +82,19 @@ define([
                 model.joints.push({
                     name: name,
                     parent: parseInt(parent), 
-                    pos: new Float32Array([parseFloat(x), parseFloat(y), parseFloat(z), 0]), 
-                    orient: quat4.calculateW(new Float32Array([parseFloat(ox), parseFloat(oy), parseFloat(oz), 0])),
+                    pos: [parseFloat(x), parseFloat(y), parseFloat(z)], 
+                    orient: quat4.calculateW([parseFloat(ox), parseFloat(oy), parseFloat(oz), 0]),
                 });
-                model.jointsData[jointsOffset++] = parseFloat(x);
-                model.jointsData[jointsOffset++] = parseFloat(y);
-                model.jointsData[jointsOffset++] = parseFloat(z);
-                model.jointsData[jointsOffset++] = 0;
-                model.jointsData[jointsOffset++] = parseFloat(ox);
-                model.jointsData[jointsOffset++] = parseFloat(oy);
-                model.jointsData[jointsOffset++] = parseFloat(oz);
-                model.jointsData[jointsOffset++] = 0;
+                if (useSIMD) {
+                    model.jointsData[jointsOffset++] = parseFloat(x);
+                    model.jointsData[jointsOffset++] = parseFloat(y);
+                    model.jointsData[jointsOffset++] = parseFloat(z);
+                    model.jointsData[jointsOffset++] = 0;
+                    model.jointsData[jointsOffset++] = parseFloat(ox);
+                    model.jointsData[jointsOffset++] = parseFloat(oy);
+                    model.jointsData[jointsOffset++] = parseFloat(oz);
+                    model.jointsData[jointsOffset++] = 0;
+                }
             });
         });
 
@@ -115,10 +117,10 @@ define([
 
             meshSrc.replace(/vert .+ \( (.+) (.+) \) (.+) (.+)/g, function($0, u, v, weightIndex, weightCount) {
                 mesh.verts.push({
-                    pos: new Float32Array([0, 0, 0, 0]),
-                    normal: new Float32Array([0, 0, 0, 0]),
-                    tangent: new Float32Array([0, 0, 0, 0]),
-                    texCoord: new Float32Array([parseFloat(u), parseFloat(v), 0, 0]),
+                    pos: [0, 0, 0],
+                    normal: [0, 0, 0],
+                    tangent: [0, 0, 0],
+                    texCoord: [parseFloat(u), parseFloat(v)],
                     weight: {
                         index: parseInt(weightIndex), 
                         count: parseInt(weightCount)
@@ -139,9 +141,9 @@ define([
                 mesh.weights.push({
                     joint: parseInt(joint), 
                     bias: parseFloat(bias), 
-                    pos: new Float32Array([parseFloat(x), parseFloat(y), parseFloat(z), 0]),
-                    normal: new Float32Array([0, 0, 0, 0]),
-                    tangent: new Float32Array([0, 0, 0, 0]),
+                    pos: [parseFloat(x), parseFloat(y), parseFloat(z)],
+                    normal: [0, 0, 0],
+                    tangent: [0, 0, 0],
                 });
                 mesh.weightsData[weightsOffset++] = parseFloat(bias);
                 // pos
@@ -175,7 +177,7 @@ define([
         for(var i = 0; i < mesh.verts.length; ++i) {
             var vert = mesh.verts[i];
 
-            vert.pos = new Float32Array([0, 0, 0, 0]);
+            vert.pos = [0, 0, 0];
             for (var j = 0; j < vert.weight.count; ++j) {
                 var weight = mesh.weights[vert.weight.index + j];
                 var joint = joints[weight.joint];
@@ -239,14 +241,16 @@ define([
                     quat4.multiplyVec3(invOrient, vert.normal, weight.normal);
                     quat4.multiplyVec3(invOrient, vert.tangent, weight.tangent);
 
-                    mesh.weightsData[(vert.weight.index + j) * 13 + 5] = weight.normal[0];
-                    mesh.weightsData[(vert.weight.index + j) * 13 + 6] = weight.normal[1];
-                    mesh.weightsData[(vert.weight.index + j) * 13 + 7] = weight.normal[2];
-                    mesh.weightsData[(vert.weight.index + j) * 13 + 8] = weight.normal[3];
-                    mesh.weightsData[(vert.weight.index + j) * 13 + 9] = weight.tangent[0];
-                    mesh.weightsData[(vert.weight.index + j) * 13 + 10] = weight.tangent[1];
-                    mesh.weightsData[(vert.weight.index + j) * 13 + 11] = weight.tangent[2];
-                    mesh.weightsData[(vert.weight.index + j) * 13 + 12] = weight.tangent[3];
+                    if (useSIMD) {
+                        mesh.weightsData[(vert.weight.index + j) * 13 + 5] = weight.normal[0];
+                        mesh.weightsData[(vert.weight.index + j) * 13 + 6] = weight.normal[1];
+                        mesh.weightsData[(vert.weight.index + j) * 13 + 7] = weight.normal[2];
+                        mesh.weightsData[(vert.weight.index + j) * 13 + 8] = weight.normal[3];
+                        mesh.weightsData[(vert.weight.index + j) * 13 + 9] = weight.tangent[0];
+                        mesh.weightsData[(vert.weight.index + j) * 13 + 10] = weight.tangent[1];
+                        mesh.weightsData[(vert.weight.index + j) * 13 + 11] = weight.tangent[2];
+                        mesh.weightsData[(vert.weight.index + j) * 13 + 12] = weight.tangent[3];
+                    }
                 }
             }
         }
@@ -632,17 +636,20 @@ define([
             var offset = 0;
             baseframeSrc.replace(/\( (.+) (.+) (.+) \) \( (.+) (.+) (.+) \)/g, function($0, x, y, z, ox, oy, oz) {
                 anim.baseFrame.push({
-                    pos: new Float32Array([parseFloat(x), parseFloat(y), parseFloat(z), 0]), 
-                    orient: new Float32Array([parseFloat(ox), parseFloat(oy), parseFloat(oz), 0]),
+                    pos: [parseFloat(x), parseFloat(y), parseFloat(z)], 
+                    orient: [parseFloat(ox), parseFloat(oy), parseFloat(oz)]
                 });
-                anim.baseFrameJointsData[offset++] = parseFloat(x);
-                anim.baseFrameJointsData[offset++] = parseFloat(y);
-                anim.baseFrameJointsData[offset++] = parseFloat(z);
-                anim.baseFrameJointsData[offset++] = 0;
-                anim.baseFrameJointsData[offset++] = parseFloat(ox);
-                anim.baseFrameJointsData[offset++] = parseFloat(oy);
-                anim.baseFrameJointsData[offset++] = parseFloat(oz);
-                anim.baseFrameJointsData[offset++] = 0;
+
+                if (useSIMD) {
+                    anim.baseFrameJointsData[offset++] = parseFloat(x);
+                    anim.baseFrameJointsData[offset++] = parseFloat(y);
+                    anim.baseFrameJointsData[offset++] = parseFloat(z);
+                    anim.baseFrameJointsData[offset++] = 0;
+                    anim.baseFrameJointsData[offset++] = parseFloat(ox);
+                    anim.baseFrameJointsData[offset++] = parseFloat(oy);
+                    anim.baseFrameJointsData[offset++] = parseFloat(oz);
+                    anim.baseFrameJointsData[offset++] = 0;
+                }
             });
         });
 
@@ -670,7 +677,7 @@ define([
             var offset = this.hierarchy[i].index;
             var flags = this.hierarchy[i].flags;
 
-            var aPos = [baseJoint.pos[0], baseJoint.pos[1], baseJoint.pos[2], 0];
+            var aPos = [baseJoint.pos[0], baseJoint.pos[1], baseJoint.pos[2]];
             var aOrient = [baseJoint.orient[0], baseJoint.orient[1], baseJoint.orient[2], 0];
 
             var j = 0;
