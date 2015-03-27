@@ -40,6 +40,8 @@ define([
     var Md5Mesh = function() {
         this.joints = null;
         this.meshes = null;
+        this.pos = vec3.create([0.0, 0.0, 0.0]);
+        this.mesh_texture_loaded = 0;
     };
 
     Md5Mesh.prototype.load = function(gl, url, callback) {
@@ -51,9 +53,10 @@ define([
         var request = new XMLHttpRequest();
         request.addEventListener("load", function() {
             self._parse(request.responseText);
-            self._initializeTextures(gl);
-            self._initializeBuffers(gl);
-            if(callback) { callback(self); }
+            self._initializeTextures(gl, function() {
+                self._initializeBuffers(gl);
+                if(callback) callback(self);
+            });
         });
         request.open('GET', BASE_PATH + url, true);
         request.overrideMimeType('text/plain');
@@ -211,7 +214,9 @@ define([
         }
     };
     
-    Md5Mesh.prototype._initializeTextures = function(gl) {
+    Md5Mesh.prototype._initializeTextures = function(gl, callback) {
+        var self = this;
+        var mesh_texture_loaded = 0;
         for(var i = 0; i < this.meshes.length; ++i) {
             var mesh = this.meshes[i];
 
@@ -220,23 +225,29 @@ define([
             mesh.specularMap = glUtil.createSolidTexture(gl, [0, 0, 0, 255]);
             mesh.normalMap = glUtil.createSolidTexture(gl, [0, 0, 255, 255]);
             
-            this._loadMeshTextures(gl, mesh);
+            this._loadMeshTextures(gl, mesh, function() {
+                mesh_texture_loaded++;
+                if (mesh_texture_loaded == self.meshes.length) {
+                    if (callback) callback();
+                }
+            });
         }
     };
     
     // Finds the meshes texures
     // Confession: Okay, so this function is a big giant cheat... 
     // but have you SEEN how those mtr files are structured?
-    Md5Mesh.prototype._loadMeshTextures = function(gl, mesh) {
+    Md5Mesh.prototype._loadMeshTextures = function(gl, mesh, callback) {
         // Attempt to load actual textures
         glUtil.loadTexture(gl, BASE_PATH + mesh.shader + '.png', function(texture) {
             mesh.diffuseMap = texture;
-        });
-        glUtil.loadTexture(gl, BASE_PATH + mesh.shader + '_s.png', function(texture) {
-            mesh.specularMap = texture;
-        });
-        glUtil.loadTexture(gl, BASE_PATH + mesh.shader + '_local.png', function(texture) {
-            mesh.normalMap = texture;
+            glUtil.loadTexture(gl, BASE_PATH + mesh.shader + '_s.png', function(texture) {
+                mesh.specularMap = texture;
+                glUtil.loadTexture(gl, BASE_PATH + mesh.shader + '_local.png', function(texture) {
+                    mesh.normalMap = texture;
+                    if (callback) callback();
+                });
+            });
         });
     };
         
@@ -398,6 +409,8 @@ define([
             gl.vertexAttribPointer(shader.attribute.texture, 2, gl.FLOAT, false, VERTEX_STRIDE, meshOffset+12);
             gl.vertexAttribPointer(shader.attribute.normal, 3, gl.FLOAT, false, VERTEX_STRIDE, meshOffset+20);
             gl.vertexAttribPointer(shader.attribute.tangent, 3, gl.FLOAT, false, VERTEX_STRIDE, meshOffset+32);
+
+            gl.uniform3fv(shader.uniform.meshPos, this.pos);
             
             gl.drawElements(gl.TRIANGLES, mesh.elementCount, gl.UNSIGNED_SHORT, mesh.indexOffset*2);
         }

@@ -104,6 +104,8 @@ define([
         };
 
         function releaseTextureImageLoader(til) {
+            // TODO(huningxin): fix this workaround for multiple loading
+            /*
             var req;
             if(pendingTextureRequests.length) {
                 req = pendingTextureRequests.shift();
@@ -111,11 +113,14 @@ define([
             } else {
                 textureImageCache[cacheTop++] = til;
             }
+            */
         }
 
         return function(gl, src, texture, callback) {
-            var til;
-
+            var til = new TextureImageLoader(releaseTextureImageLoader);
+            til.loadTexture(gl, src, texture, callback);
+            // TODO(huningxin): fix this workaround for multiple loading
+            /*
             if(cacheTop) {
                 til = textureImageCache[--cacheTop];
                 til.loadTexture(gl, src, texture, callback);
@@ -126,6 +131,7 @@ define([
             } else {
                 pendingTextureRequests.push(new PendingTextureRequest(gl, src, texture, callback));
             }
+            */
         };
     })();
 

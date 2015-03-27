@@ -67,6 +67,7 @@ freely, subject to the following restrictions:
                     "attribute vec3 normal;",
                     "attribute vec3 tangent;",
 
+                    "uniform vec3 meshPos;",
                     "uniform vec3 lightPos;",
 
                     "uniform mat4 modelViewMat;",
@@ -78,7 +79,7 @@ freely, subject to the following restrictions:
                     "varying vec3 tangentEyeDir;",
 
                     "void main(void) {",
-                    " vec4 vPosition = modelViewMat * vec4(position, 1.0);",
+                    " vec4 vPosition = modelViewMat * vec4(position + meshPos, 1.0);",
                     " gl_Position = projectionMat * vPosition;",
                     " vTexCoord = texture;",
 
@@ -143,7 +144,7 @@ freely, subject to the following restrictions:
                     this.camera = new Camera.OrbitCamera(canvas);
                     this.camera.setCenter([0, 0, 64]);
                     this.camera.orbit(-Math.PI * 0.5, 0);
-                    this.camera.setDistance(190);
+                    this.camera.setDistance(390);
                     this.camera.minDistance = 32;
                     
                     this.projectionMat = mat4.create();
@@ -158,6 +159,8 @@ freely, subject to the following restrictions:
                     
                     this.animation = null;
                     this.meshShader = GLUtil.createProgram(gl, meshVS, meshFS);
+                    this.models = [];
+                    this.num_of_models = 50;
                     this._loadMesh(gl);
                 };
 
@@ -189,25 +192,42 @@ freely, subject to the following restrictions:
                     gl.uniform3fv(shader.uniform.specularColor, specularColor);
                     gl.uniform1f(shader.uniform.shininess, shininess);
 
-                    this.model.draw(gl, shader);
+                    for (var i = 0; i < this.models.length; ++i) {
+                        this.models[i].draw(gl, shader);
+                    }
                 };
 
                 Renderer.prototype._loadMesh = function(gl) {
                     var self = this;
+                    for (var i = 0; i < this.num_of_models; ++i) {
+                        var model = new MD5.Md5Mesh();
+                        model.load(gl, 'models/md5/monsters/hellknight/hellknight.md5mesh', function(mesh) {
+                            var x = 200 - Math.random() * 400;
+                            var y = 200 - Math.random() * 400;
+                            mesh.pos = vec3.create([x, y, 0.0]);
+                            self.models.push(mesh);
 
-                    this.model = new MD5.Md5Mesh();
-                    this.model.load(gl, 'models/md5/monsters/hellknight/hellknight.md5mesh');
+                            console.log('loaded #' + self.models.length);
 
-                    var anim = new MD5.Md5Anim();
-                    anim.load('models/md5/monsters/hellknight/idle2.md5anim', function(anim) {
-                        var currentFrame = 0;
-                        var interval = 1000 / anim.frameRate;
+                            if (self.models.length == self.num_of_models) {
+                                for (var i = 0; i < self.models.length; ++i) {
+                                    var anim = new MD5.Md5Anim();
+                                    var closure = function (i, anim) {
+                                        anim.load('models/md5/monsters/hellknight/idle2.md5anim', function(anim) {
+                                            var currentFrame = 0;
+                                            var interval = 1000 / anim.frameRate;
 
-                        setInterval(function() {
-                            currentFrame++;
-                            self.model.setAnimationFrame(gl, anim, currentFrame);
-                        }, interval);
-                    });
+                                            setInterval(function() {
+                                                currentFrame++;
+                                                self.models[i].setAnimationFrame(gl, anim, currentFrame);
+                                            }, interval);
+                                        });
+                                    };
+                                    closure(i, anim);
+                                }
+                            }
+                        });
+                    }
                 };
 
                 // Setup the canvas and GL context, initialize the scene 
