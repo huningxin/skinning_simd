@@ -37,7 +37,7 @@ define([
     var VERTEX_ELEMENTS = 11; // 3 Pos, 2 UV, 3 Norm, 3 Tangent
     var VERTEX_STRIDE = 44;
 
-    var useSIMD = false;
+    var useSIMD = true;
     
     var Md5Mesh = function() {
         this.joints = null;
@@ -85,16 +85,17 @@ define([
                     pos: [parseFloat(x), parseFloat(y), parseFloat(z)], 
                     orient: quat4.calculateW([parseFloat(ox), parseFloat(oy), parseFloat(oz), 0]),
                 });
-                if (useSIMD) {
-                    model.jointsData[jointsOffset++] = parseFloat(x);
-                    model.jointsData[jointsOffset++] = parseFloat(y);
-                    model.jointsData[jointsOffset++] = parseFloat(z);
-                    model.jointsData[jointsOffset++] = 0;
-                    model.jointsData[jointsOffset++] = parseFloat(ox);
-                    model.jointsData[jointsOffset++] = parseFloat(oy);
-                    model.jointsData[jointsOffset++] = parseFloat(oz);
-                    model.jointsData[jointsOffset++] = 0;
-                }
+                // Initialize jointsData for SIMD version
+                // pos
+                model.jointsData[jointsOffset++] = parseFloat(x);
+                model.jointsData[jointsOffset++] = parseFloat(y);
+                model.jointsData[jointsOffset++] = parseFloat(z);
+                model.jointsData[jointsOffset++] = 0;
+                // orient
+                model.jointsData[jointsOffset++] = parseFloat(ox);
+                model.jointsData[jointsOffset++] = parseFloat(oy);
+                model.jointsData[jointsOffset++] = parseFloat(oz);
+                model.jointsData[jointsOffset++] = 0;
             });
         });
 
@@ -120,7 +121,7 @@ define([
                     pos: [0, 0, 0],
                     normal: [0, 0, 0],
                     tangent: [0, 0, 0],
-                    texCoord: [parseFloat(u), parseFloat(v)],
+                    texCoord: new Float32Array([parseFloat(u), parseFloat(v), 0, 0]),
                     weight: {
                         index: parseInt(weightIndex), 
                         count: parseInt(weightCount)
@@ -145,6 +146,7 @@ define([
                     normal: [0, 0, 0],
                     tangent: [0, 0, 0],
                 });
+                // Initialize weigthsData for SIMD version
                 mesh.weightsData[weightsOffset++] = parseFloat(bias);
                 // pos
                 mesh.weightsData[weightsOffset++] = parseFloat(x);
@@ -241,16 +243,15 @@ define([
                     quat4.multiplyVec3(invOrient, vert.normal, weight.normal);
                     quat4.multiplyVec3(invOrient, vert.tangent, weight.tangent);
 
-                    if (useSIMD) {
-                        mesh.weightsData[(vert.weight.index + j) * 13 + 5] = weight.normal[0];
-                        mesh.weightsData[(vert.weight.index + j) * 13 + 6] = weight.normal[1];
-                        mesh.weightsData[(vert.weight.index + j) * 13 + 7] = weight.normal[2];
-                        mesh.weightsData[(vert.weight.index + j) * 13 + 8] = weight.normal[3];
-                        mesh.weightsData[(vert.weight.index + j) * 13 + 9] = weight.tangent[0];
-                        mesh.weightsData[(vert.weight.index + j) * 13 + 10] = weight.tangent[1];
-                        mesh.weightsData[(vert.weight.index + j) * 13 + 11] = weight.tangent[2];
-                        mesh.weightsData[(vert.weight.index + j) * 13 + 12] = weight.tangent[3];
-                    }
+                    // Set weigthsData for SIMD version
+                    mesh.weightsData[(vert.weight.index + j) * 13 + 5] = weight.normal[0];
+                    mesh.weightsData[(vert.weight.index + j) * 13 + 6] = weight.normal[1];
+                    mesh.weightsData[(vert.weight.index + j) * 13 + 7] = weight.normal[2];
+                    mesh.weightsData[(vert.weight.index + j) * 13 + 8] = 0;
+                    mesh.weightsData[(vert.weight.index + j) * 13 + 9] = weight.tangent[0];
+                    mesh.weightsData[(vert.weight.index + j) * 13 + 10] = weight.tangent[1];
+                    mesh.weightsData[(vert.weight.index + j) * 13 + 11] = weight.tangent[2];
+                    mesh.weightsData[(vert.weight.index + j) * 13 + 12] = 0;
                 }
             }
         }
@@ -435,8 +436,6 @@ define([
                 var nx4 = SIMD.float32x4.splat(0);
                 var tx4 = SIMD.float32x4.splat(0);
 
-                var vert_pos = SIMD.float32x4.splat(0);
-
                 for (var k = 0; k < vert.weight.count; ++k) {
                     var weight = mesh.weights[vert.weight.index + k];
                     var weigthsData = mesh.weightsData;
@@ -525,8 +524,8 @@ define([
             var joints = animation.getFrameJoints(frame);
             this._skin(joints);
         } else {
-            var joints = animation.getFrameJointsSIMD(frame);
-            this._skinSIMD(joints);
+            var jointsData = animation.getFrameJoints(frame);
+            this._skinSIMD(jointsData);
         }
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, this.vertArray, gl.STATIC_DRAW);
@@ -639,27 +638,16 @@ define([
                     pos: [parseFloat(x), parseFloat(y), parseFloat(z)], 
                     orient: [parseFloat(ox), parseFloat(oy), parseFloat(oz)]
                 });
-
-                if (useSIMD) {
-                    anim.baseFrameJointsData[offset++] = parseFloat(x);
-                    anim.baseFrameJointsData[offset++] = parseFloat(y);
-                    anim.baseFrameJointsData[offset++] = parseFloat(z);
-                    anim.baseFrameJointsData[offset++] = 0;
-                    anim.baseFrameJointsData[offset++] = parseFloat(ox);
-                    anim.baseFrameJointsData[offset++] = parseFloat(oy);
-                    anim.baseFrameJointsData[offset++] = parseFloat(oz);
-                    anim.baseFrameJointsData[offset++] = 0;
-                }
             });
         });
 
 
         src.replace(/frame \d+ \{([^}]*)\}/mg, function($0, frameSrc) {
-            var frame = new Float32Array(4000);
+            var frame = new Array();
             var offset = 0;
 
             frameSrc.replace(/([-\.\d]+)/g, function($0, value) {
-                frame[offset++] = parseFloat(value);
+                frame.push(parseFloat(value));
             });
 
             anim.frames.push(frame);
@@ -671,6 +659,7 @@ define([
     
         var frameData = this.frames[frame]; 
         var joints = new Array();
+        var jointsOffset = 0;
 
         for (var i = 0; i < this.baseFrame.length; ++i) {
             var baseJoint = this.baseFrame[i];
@@ -727,112 +716,25 @@ define([
                 quat4.multiply(parentJoint.orient, aOrient, aOrient);
             }
 
-            joints.push({pos: aPos, orient: aOrient}); // This could be so much better!
+            if (!useSIMD) {
+                joints.push({pos: aPos, orient: aOrient}); // This could be so much better!
+            } else {
+                joints.push({pos: aPos, orient: aOrient}); // This could be so much better!
+                this.jointsData[jointsOffset++] = aPos[0];
+                this.jointsData[jointsOffset++] = aPos[1];
+                this.jointsData[jointsOffset++] = aPos[2];
+                this.jointsData[jointsOffset++] = 0;
+                this.jointsData[jointsOffset++] = aOrient[0];
+                this.jointsData[jointsOffset++] = aOrient[1];
+                this.jointsData[jointsOffset++] = aOrient[2];
+                this.jointsData[jointsOffset++] = aOrient[3];
+            }
         }
 
-        return joints;
-    };
-
-    Md5Anim.prototype.getFrameJointsSIMD = function(frame) {
-        frame = frame % this.frames.length;
-    
-        var frameData = this.frames[frame]; 
-
-        // jointsData holds pos4f and orient4f
-        var jointsData = this.jointsData;
-        var jointsOffset = 0;
-
-        var tempx4 = SIMD.float32x4(1, 1, 1, -1);
-
-        for (var i = 0; i < this.baseFrame.length; ++i) {
-            var offset = this.hierarchy[i].index;
-            var flags = this.hierarchy[i].flags;
-
-            var aPos = SIMD.float32x4.load(this.baseFrameJointsData, i * 8);
-            var aOrient = SIMD.float32x4.load(this.baseFrameJointsData, i * 8 + 4);
-
-            var j = 0;
-
-            if (flags & 7) {
-                aPos = SIMD.float32x4.loadXYZ(frameData, offset + j);
-                j += 3;
-            } else {
-                if (flags & 1) { // Translate X
-                    aPos = SIMD.float32x4.withX(aPos, frameData[offset + j]);
-                    ++j;
-                }
-                if (flags & 2) { // Translate Y
-                    aPos = SIMD.float32x4.withY(aPos, frameData[offset + j]);
-                    ++j;
-                }
-                if (flags & 4) { // Translate Z
-                    aPos = SIMD.float32x4.withZ(aPos, frameData[offset + j]);
-                    ++j;
-                }
-            }
-
-            if (flags & 56) {
-                aOrient = SIMD.float32x4.loadXYZ(frameData, offset + j);
-            } else {
-                if (flags & 8) { // Orient X
-                    aOrient = SIMD.float32x4.withX(aOrient, frameData[offset + j]);
-                    ++j;
-                }
-                if (flags & 16) { // Orient Y
-                    aOrient = SIMD.float32x4.withY(aOrient, frameData[offset + j]);
-                    ++j;
-                }
-                if (flags & 32) { // Orient Z
-                    aOrient = SIMD.float32x4.withZ(aOrient, frameData[offset + j]);
-                    ++j;
-                }
-            }
-
-            // Recompute W value
-            // This is slow.
-            var w = -Math.sqrt(Math.abs(1.0 - aOrient.x * aOrient.x - aOrient.y * aOrient.y - aOrient.z * aOrient.z));
-            aOrient = SIMD.float32x4.withW(aOrient, w);
-
-            // Multiply against parent 
-            //(assumes parents always have a lower index than their children)
-            var parentIndex = this.hierarchy[i].parent;
-
-            if(parentIndex >= 0) {
-                var pOrient = SIMD.float32x4.load(jointsData, parentIndex * 8 + 4);
-                
-                var ix4 = SIMD.float32x4.sub(
-                    SIMD.float32x4.add(
-                        SIMD.float32x4.mul(SIMD.float32x4.mul(SIMD.float32x4.swizzle(pOrient, 3, 3, 3, 0), tempx4),
-                                           SIMD.float32x4.swizzle(aPos, 0, 1, 2, 0)),
-                        SIMD.float32x4.mul(SIMD.float32x4.mul(SIMD.float32x4.swizzle(pOrient, 1, 2, 0, 1), tempx4),
-                                           SIMD.float32x4.swizzle(aPos, 2, 0, 1, 1))),
-                    SIMD.float32x4.mul(SIMD.float32x4.swizzle(pOrient, 2, 0, 1, 2),
-                                       SIMD.float32x4.swizzle(aPos, 1, 2, 0, 2)));
-
-                aPos = SIMD.float32x4.add(
-                    SIMD.float32x4.sub(SIMD.float32x4.mul(ix4, SIMD.float32x4.swizzle(pOrient, 3, 3, 3, 0)),
-                                       SIMD.float32x4.mul(SIMD.float32x4.swizzle(ix4, 3, 3, 3, 0), pOrient)),
-                    SIMD.float32x4.sub(SIMD.float32x4.mul(SIMD.float32x4.swizzle(ix4, 2, 0, 1, 0), SIMD.float32x4.swizzle(pOrient, 1, 2, 0, 0)),
-                                       SIMD.float32x4.mul(SIMD.float32x4.swizzle(ix4, 1, 2, 0, 0), SIMD.float32x4.swizzle(pOrient, 2, 0, 1, 0))));
-
-                var pPos = SIMD.float32x4.load(jointsData, parentIndex * 8);
-                aPos = SIMD.float32x4.add(aPos, pPos);
-
-                aOrient = SIMD.float32x4.add(
-                    SIMD.float32x4.add(
-                        SIMD.float32x4.mul(pOrient, SIMD.float32x4.swizzle(aOrient, 3, 3, 3, 3)),
-                        SIMD.float32x4.mul(SIMD.float32x4.mul(tempx4, SIMD.float32x4.swizzle(pOrient, 3, 3, 3, 0)), SIMD.float32x4.swizzle(aOrient, 0, 1, 2, 0))),
-                    SIMD.float32x4.sub(
-                        SIMD.float32x4.mul(SIMD.float32x4.mul(tempx4, SIMD.float32x4.swizzle(pOrient, 1, 2, 0, 1)), SIMD.float32x4.swizzle(aOrient, 2, 0, 1, 1)),
-                        SIMD.float32x4.mul(SIMD.float32x4.swizzle(pOrient, 2, 0, 1, 2), SIMD.float32x4.swizzle(aOrient, 1, 2, 0, 2))));
-            }
-
-            SIMD.float32x4.store(jointsData, jointsOffset * 8, aPos);
-            SIMD.float32x4.store(jointsData, jointsOffset * 8 + 4, aOrient);
-            jointsOffset++;
-        }
-
-        return jointsData;
+        if (!useSIMD)
+            return joints;
+        else
+            return this.jointsData;
     };
 
     return {
