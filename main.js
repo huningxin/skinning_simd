@@ -172,7 +172,7 @@ require([
                     model.setAnimationFrame(gl, anim, currentFrame);
                 }, interval);
 
-                self.animations.push({anim: anim, interval: handle});
+                self.animations.push({anim: anim, handle: handle});
             });
         });
     };
