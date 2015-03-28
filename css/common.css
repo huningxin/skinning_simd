@@ -131,7 +131,7 @@ button {
         position: relative;
     }
 
-    #fullscreen {
+    #buttons {
         float: right;
     }
 }

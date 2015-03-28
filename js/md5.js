@@ -37,7 +37,11 @@ define([
     var VERTEX_ELEMENTS = 11; // 3 Pos, 2 UV, 3 Norm, 3 Tangent
     var VERTEX_STRIDE = 44;
 
-    var useSIMD = true;
+    var useSIMD = false;
+
+    var setSIMD = function(set) {
+        useSIMD = set;
+    }
     
     var Md5Mesh = function() {
         this.joints = null;
@@ -45,7 +49,7 @@ define([
         this.meshes = null;
         this.pos = vec3.create([0.0, 0.0, 0.0]);
         this.mesh_texture_loaded = 0;
-    };
+    }; 
 
     Md5Mesh.prototype.load = function(gl, url, callback) {
         this.joints = new Array();
@@ -739,6 +743,7 @@ define([
 
     return {
         Md5Mesh: Md5Mesh,
-        Md5Anim: Md5Anim
+        Md5Anim: Md5Anim,
+        setSIMD: setSIMD
     };
 });
