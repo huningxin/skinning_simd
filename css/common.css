@@ -138,6 +138,11 @@ button {
     #buttons {
         float: right;
     }
+
+    #useSimd {
+        position: absolute;
+        left: 50%;
+    }
 }
 
 /* Mobile stylesheet */
@@ -166,6 +171,20 @@ button {
         position: absolute;
         bottom: 5px;
         right: 5px;
+    }
+
+    #useSimd {
+        position: absolute;
+        bottom: 5px;
+        left: 50%;
+    }
+
+    #meshNumber {
+        position: absolute;
+        top: 5px;
+        left: 50%;
+        color: white;
+        z-index: 2;
     }
 
     label {

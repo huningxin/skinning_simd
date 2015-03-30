@@ -31,19 +31,21 @@ freely, subject to the following restrictions:
         <link href="css/common.css" rel="stylesheet" type="text/css" />
     </head>
     <body>
-        <div id="page-header" class="content-column">
-            <h1 id="meshNumber">Meshes: 0</h1>
-        </div>
         <div id="content-frame">
+            <div id="page-header" class="content-column">
+                <h1 id="meshNumber">Meshes: 0</h1>
+            </div>
             <div id="canvas-container">
                 <canvas id="webgl-canvas"></canvas>
             </div>
             <div id="controls-container" class="content-column">
+                <div id="useSimd">
+                    <input id="simdCheckbox" type="checkbox"/>
+                    <label id="simdLabel" for="simd">SIMD</label>
+                </div>
                 <div id="buttons">
                     <button id="addBtn">Add</button>
                     <button id="removeBtn">Remove</button>
-                    <input id="simdCheckbox" type="checkbox"/>
-                    <label id="simdLabel" for="simd">SIMD</label>
                 </div>
             </div>
         </div>
