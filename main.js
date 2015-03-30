@@ -162,7 +162,7 @@ require([
             }
             mesh.pos = vec3.create([x, y, 0.0]);
             self.models.push(mesh);
-            meshNumber.innerHTML = 'Meshes: ' + self.models.length;
+            meshNumber.innerHTML = self.models.length;
 
             var anim = new MD5.Md5Anim();
             anim.load('models/md5/monsters/hellknight/idle2.md5anim', function(anim) {
@@ -187,7 +187,7 @@ require([
         var anim = this.animations.pop();
         clearInterval(anim.handle);
         this.models.pop();
-        meshNumber.innerHTML = 'Meshes: ' + this.models.length;
+        meshNumber.innerHTML = this.models.length;
     }
 
     // Setup the canvas and GL context, initialize the scene 
@@ -196,7 +196,7 @@ require([
     var renderer = new Renderer(contextHelper.gl, canvas);
 
     var stats = new Stats();
-    document.getElementById("controls-container").appendChild(stats.domElement);
+    document.getElementById("content").appendChild(stats.domElement);
 
     var addBtn = document.getElementById("addBtn");
     addBtn.addEventListener("click", function() {
@@ -208,46 +208,59 @@ require([
         renderer.removeMesh();
     });
 
-    var meshNumber = document.getElementById("meshNumber");
+    var meshNumber = document.getElementById("meshes");
 
-    var simdCheckbox = document.getElementById("simdCheckbox");
+    var simdBtn = document.getElementById("simdBtn");
     if (typeof SIMD === "undefined") {
-        simdCheckbox.disabled = true;
-        var simdLabel = document.getElementById("simdLabel");
-        simdLabel.innerHTML = "Your browser doesn't support SIMD";
+        alert('SIMD not implemented in this browser. SIMD speedup button is disabled');
+        simdBtn.disabled = true;
+        simdBtn.classList.add("btn-disable");
     }
-    simdCheckbox.checked = false;
+    var useSimd = false;
 
-    simdCheckbox.onchange = function(event) {
-        if (simdCheckbox.checked) {
+    var simdInfo = document.getElementById("info");
+    simdBtn.addEventListener("click", function() {
+        if (!useSimd) {
+            useSimd = true;
             adjuster.reset();
-            MD5.setSIMD(true);
+            simdBtn.innerHTML = "Don't use SIMD";
+            info.innerHTML = 'SIMD';
         } else {
+            useSimd = false;
             adjuster.reset();
-            MD5.setSIMD(false);
+            simdBtn.innerHTML = 'Use SIMD';
+            info.innerHTML = 'No SIMD';
         }
-    };
+        MD5.setSIMD(useSimd);
+    });
 
     var adjuster = new MeshAdjuster(renderer, contextHelper.gl, stats);
 
-    var autoCheckbox = document.getElementById("autoCheckbox");
-    autoCheckbox.checked = false;
+    var autoBtn = document.getElementById("autoBtn");
+    var autoAdjust = false;
     addBtn.disabled = false;
     removeBtn.disabled = false;
 
-    autoCheckbox.onchange = function(event) {
-        if (autoCheckbox.checked) {
+    autoBtn.addEventListener("click", function() {
+        if (!autoAdjust) {
+            autoAdjust = true;
             addBtn.disabled = true;
+            addBtn.classList.add("btn-disable");
             removeBtn.disabled = true;
+            removeBtn.classList.add("btn-disable");
             adjuster.reset();
             adjuster.start();
+            autoBtn.innerHTML = 'Stop Auto Adjust';
         } else {
+            autoAdjust = false;
             addBtn.disabled = false;
+            addBtn.classList.remove("btn-disable");
             removeBtn.disabled = false;
+            removeBtn.classList.remove("btn-disable");
             adjuster.stop();
+            autoBtn.innerHTML = 'Auto Adjust';
         }
-    };    
-
+    });    
     
     // Get the render loop going
     contextHelper.start(renderer, stats);
