@@ -114,9 +114,7 @@ require([
         this.meshShader = GLUtil.createProgram(gl, meshVS, meshFS);
         this.models = [];
         this.isLoading = false;
-        for (var i = 0; i < 1; ++i) {
-            this.addMesh(gl);
-        }
+        this.addMesh(gl);
     };
 
     Renderer.prototype.resize = function (gl, canvas) {
@@ -156,8 +154,12 @@ require([
         var self = this;
         var model = new MD5.Md5Mesh();
         model.load(gl, 'models/md5/monsters/hellknight/hellknight.md5mesh', function(mesh) {
-            var x = 200 - Math.random() * 400;
-            var y = 200 - Math.random() * 400;
+            var x = 0;
+            var y = 0;
+            if (self.models.length != 0) {
+                x = 200 - Math.random() * 400;
+                y = 200 - Math.random() * 400;
+            }
             mesh.pos = vec3.create([x, y, 0.0]);
             self.models.push(mesh);
             meshNumber.innerHTML = 'Meshes: ' + self.models.length;

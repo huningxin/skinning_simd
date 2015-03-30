@@ -46,6 +46,10 @@ button {
     z-index: 2;
 }
 
+#buttons {
+    z-index: 2;
+}
+
 #content-frame:-webkit-full-screen,
 #content-frame:-webkit-full-screen #webgl-canvas {
     margin: 0px;
@@ -156,5 +160,15 @@ button {
         position: absolute;
         bottom: 5px;
         left: 5px;
+    }
+
+    #buttons {
+        position: absolute;
+        bottom: 5px;
+        right: 5px;
+    }
+
+    label {
+        background-color: white;
     }
 }
