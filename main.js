@@ -180,8 +180,8 @@ require([
     };
 
     Renderer.prototype.removeMesh = function() {
-        if (this.models.length == 0) {
-            console.log('no more models');
+        if (this.models.length == 1) {
+            console.log('Only 1 model');
             return;
         }
         var anim = this.animations.pop();
@@ -219,12 +219,117 @@ require([
     simdCheckbox.checked = false;
 
     simdCheckbox.onchange = function(event) {
-        if (simdCheckbox.checked)
+        if (simdCheckbox.checked) {
+            adjuster.reset();
             MD5.setSIMD(true);
-        else
+        } else {
+            adjuster.reset();
             MD5.setSIMD(false);
+        }
     };
+
+    var adjuster = new MeshAdjuster(renderer, contextHelper.gl, stats);
+
+    var autoCheckbox = document.getElementById("autoCheckbox");
+    autoCheckbox.checked = false;
+    addBtn.disabled = false;
+    removeBtn.disabled = false;
+
+    autoCheckbox.onchange = function(event) {
+        if (autoCheckbox.checked) {
+            addBtn.disabled = true;
+            removeBtn.disabled = true;
+            adjuster.reset();
+            adjuster.start();
+        } else {
+            addBtn.disabled = false;
+            removeBtn.disabled = false;
+            adjuster.stop();
+        }
+    };    
+
     
     // Get the render loop going
     contextHelper.start(renderer, stats);
 });
+
+var MeshAdjuster = function (renderer, gl, stats) {
+    var renderer = renderer;
+    var gl = gl;
+    var stats = stats;
+    var targetFps = 60.0;
+    var meetTarget = 0;
+    var missTarget = 0;
+    var unstable = 0;
+    var meetNumber = 1;
+    var missNumber = 3;
+    var max = renderer.models.length;
+    var min = renderer.models.length;
+    var handle = null;
+
+    var reset = function() {
+        targetFps = 60.0;
+        meetTarget = 0;
+        missTarget = 0;
+        unstable = 0;
+        meetNumber = 1;
+        missNumber = 3;
+        max = renderer.models.length;
+        min = renderer.models.length;
+    };
+
+    var start = function() {
+        handle = setInterval(function() {
+            var fps = stats.getFps();
+            if (fps >= targetFps) {
+                meetTarget++;
+                if (missTarget > 0)
+                    missTarget--;
+            } else {
+                missTarget++;
+                if (meetTarget > 0)
+                    meetTarget--;
+            }
+
+            console.log(fps, renderer.models.length, min, max, meetTarget, meetNumber, missTarget, missNumber);
+
+            if (max == renderer.models.length) {
+                meetNumber = 1;
+            }
+
+            if (min == renderer.models.length) {
+                missNumber = 3;
+            }
+
+            if (meetTarget >= meetNumber && missTarget == 0) {
+                renderer.addMesh(gl);
+                max++;
+                meetNumber++;
+                console.log('addMesh');
+                unstable = 0;
+                meetTarget = 0;
+            }
+
+            if (missTarget >= missNumber && meetTarget == 0) {
+                renderer.removeMesh();
+                if (min > 0) {
+                    min--;
+                }
+                missNumber++;
+                console.log('removeMesh');
+                unstable = 0;
+                missTarget = 0;
+            }
+        }, 1000);
+    }
+
+    var stop = function() {
+        clearInterval(handle);
+    }
+
+    return {
+        start: start,
+        stop: stop,
+        reset: reset
+    };
+}
