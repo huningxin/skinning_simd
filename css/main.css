@@ -28,10 +28,26 @@
   width: 854px;
 }
 
-.author {
-  font-size:6pt;
+.loading {
+  position:absolute;
+  top:280px;
+  color:white;
+  font-weight:bold;
+  font-size:40pt;
+  width: 854px;
+}
+
+.author0 {
+  font-size:8pt;
   position:absolute;
   bottom:0px;
+  right:0;
+}
+
+.author1 {
+  font-size:8pt;
+  position:absolute;
+  bottom:-15px;
   right:0;
 }
 

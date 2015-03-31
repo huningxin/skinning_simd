@@ -162,6 +162,12 @@ require([
             }
             mesh.pos = vec3.create([x, y, 0.0]);
             self.models.push(mesh);
+
+            if (self.models.length == 1) {
+                var loading = document.getElementById('loading');
+                loading.style.visibility = 'hidden';
+            }
+
             meshNumber.innerHTML = self.models.length;
 
             var anim = new MD5.Md5Anim();
@@ -192,7 +198,7 @@ require([
 
     // Setup the canvas and GL context, initialize the scene 
     var canvas = document.getElementById("webgl-canvas");
-    var contextHelper = new GLContextHelper(canvas, document.getElementById("content-frame"));
+    var contextHelper = new GLContextHelper(canvas, document.getElementById("content"));
     var renderer = new Renderer(contextHelper.gl, canvas);
 
     var stats = new Stats();

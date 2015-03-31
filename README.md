@@ -2,4 +2,4 @@
 
 SIMD.js Demo: Skeletal Animation (Skinning)
 
-This demo derives from http://media.tojicode.com/webgl-samples/md5Mesh.html.
+This demo is based on http://media.tojicode.com/webgl-samples/md5Mesh.html.

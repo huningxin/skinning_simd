@@ -4,6 +4,7 @@
  
 /*
  * Copyright (c) 2011 Brandon Jones
+ * Copyright (c) 2015 Ningxin Hu
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
