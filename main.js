@@ -277,7 +277,7 @@ require([
 
     targetFps.addEventListener("change", function() {
         //console.log(parseInt(targetFps.value));
-        adjuster.setFps(parseInt(targetFps.value));
+        adjuster.reset(parseInt(targetFps.value));
     })
     
     // Get the render loop going
@@ -325,17 +325,20 @@ var MeshAdjuster = function (renderer, gl, stats) {
 
             //console.log(fps, targetFps, renderer.models.length, min, max, meetTarget, meetNumber, missTarget, missNumber);
 
-            if (max == renderer.models.length) {
+            if (max < renderer.models.length) {
+                //console.log('reset meetNumber.');
+                max = renderer.models.length;
                 meetNumber = 1;
             }
 
-            if (min == renderer.models.length) {
+            if (min > renderer.models.length) {
+                //console.log('reset missNumber.');
+                min = renderer.models.length;
                 missNumber = 3;
             }
 
             if (meetTarget >= meetNumber && missTarget == 0) {
                 renderer.addMesh(gl);
-                max++;
                 meetNumber++;
                 //console.log('addMesh');
                 unstable = 0;
@@ -344,9 +347,6 @@ var MeshAdjuster = function (renderer, gl, stats) {
 
             if (missTarget >= missNumber && meetTarget == 0) {
                 renderer.removeMesh();
-                if (min > 0) {
-                    min--;
-                }
                 missNumber++;
                 //console.log('removeMesh');
                 unstable = 0;
@@ -359,12 +359,7 @@ var MeshAdjuster = function (renderer, gl, stats) {
         clearInterval(handle);
     }
 
-    var setFps = function(fps) {
-        targetFps = fps;
-    };
-
     return {
-        setFps: setFps,
         start: start,
         stop: stop,
         reset: reset
