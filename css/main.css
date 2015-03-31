@@ -71,7 +71,7 @@
 }
 
 .btn {
-  width: 155px;
+  width: 145px;
   display: inline-block;
   margin-bottom: 0;
   font-weight: normal;
@@ -116,5 +116,22 @@ body {
 #stats {
     position: absolute;
     top: 5px;
-    left: 5px;
+    left: -15px;
+}
+
+#targetFpsInput {
+  font-size: 18px;
+  background-color: transparent;
+  text-align: center;
+  border-width: 0;
+  width: 3em;
+  color: #000;
+}
+
+#autoBtn {
+  width: 200px;
+}
+
+#targetFpsInputLable {
+  font-size: 18px;
 }

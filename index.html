@@ -34,10 +34,14 @@ freely, subject to the following restrictions:
     <body>
     <div id="content" class="center w600" style="position:relative">
         <div class="elem-center">
+        <div id="autoBtn" type="button" class="btn btn-primary btn-large">
+            <label id="targetFpsInputLable" for="targetFps"><span id="autoBtnLable">Start</span> (Target FPS): </label>
+            <input id="targetFpsInput" type="number" value="60" min="1" max="60" maxlength="2"/>
+        </div>
         <button id="simdBtn" type="button" class="btn btn-primary btn-large">Use SIMD</button>
-        <button id="autoBtn" type="button" class="btn btn-primary btn-large">Auto Adjust</button>
         <button id="addBtn" type="button" class="btn btn-primary btn-large">Add Mesh</button>
         <button id="removeBtn" type="button" class="btn btn-primary btn-large">Remove Mesh</button>
+        <!--button id="autoBtn" type="button" class="btn btn-primary btn-large">Start</button-->
         </div>
         <br />
         <div class="elem-center"><canvas id="webgl-canvas"></canvas>
@@ -47,6 +51,8 @@ freely, subject to the following restrictions:
         <div class="elem-center simd"><span id="info">No SIMD</span></div>
         <div id="loading" class="elem-center loading">Loading assets...</div>
         <br />
+        <div class="elem-center">
+        </div>
     </div>
     <script src="js/util/require.js"></script>
     <script src="main.js"></script>

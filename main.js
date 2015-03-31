@@ -187,7 +187,7 @@ require([
 
     Renderer.prototype.removeMesh = function() {
         if (this.models.length == 1) {
-            console.log('Only 1 model');
+            //console.log('Only 1 model');
             return;
         }
         var anim = this.animations.pop();
@@ -228,12 +228,12 @@ require([
     simdBtn.addEventListener("click", function() {
         if (!useSimd) {
             useSimd = true;
-            adjuster.reset();
+            adjuster.reset(parseInt(targetFps.value));
             simdBtn.innerHTML = "Don't use SIMD";
             info.innerHTML = 'SIMD';
         } else {
             useSimd = false;
-            adjuster.reset();
+            adjuster.reset(parseInt(targetFps.value));
             simdBtn.innerHTML = 'Use SIMD';
             info.innerHTML = 'No SIMD';
         }
@@ -243,6 +243,7 @@ require([
     var adjuster = new MeshAdjuster(renderer, contextHelper.gl, stats);
 
     var autoBtn = document.getElementById("autoBtn");
+    var autoBtnLabel = document.getElementById("autoBtnLable");
     var autoAdjust = false;
     addBtn.disabled = false;
     removeBtn.disabled = false;
@@ -254,9 +255,9 @@ require([
             addBtn.classList.add("btn-disable");
             removeBtn.disabled = true;
             removeBtn.classList.add("btn-disable");
-            adjuster.reset();
+            adjuster.reset(parseInt(targetFps.value));
             adjuster.start();
-            autoBtn.innerHTML = 'Stop Auto Adjust';
+            autoBtnLabel.innerHTML = 'Stop';
         } else {
             autoAdjust = false;
             addBtn.disabled = false;
@@ -264,9 +265,20 @@ require([
             removeBtn.disabled = false;
             removeBtn.classList.remove("btn-disable");
             adjuster.stop();
-            autoBtn.innerHTML = 'Auto Adjust';
+            autoBtnLabel.innerHTML = 'Start';
         }
-    });    
+    });
+
+    var targetFps = document.getElementById("targetFpsInput");
+
+    targetFps.addEventListener("click", function(event) {
+        event.stopPropagation();
+    });
+
+    targetFps.addEventListener("change", function() {
+        //console.log(parseInt(targetFps.value));
+        adjuster.setFps(parseInt(targetFps.value));
+    })
     
     // Get the render loop going
     contextHelper.start(renderer, stats);
@@ -286,8 +298,9 @@ var MeshAdjuster = function (renderer, gl, stats) {
     var min = renderer.models.length;
     var handle = null;
 
-    var reset = function() {
-        targetFps = 60.0;
+    var reset = function(fps) {
+        //console.log(fps);
+        targetFps = fps;
         meetTarget = 0;
         missTarget = 0;
         unstable = 0;
@@ -310,7 +323,7 @@ var MeshAdjuster = function (renderer, gl, stats) {
                     meetTarget--;
             }
 
-            console.log(fps, renderer.models.length, min, max, meetTarget, meetNumber, missTarget, missNumber);
+            //console.log(fps, targetFps, renderer.models.length, min, max, meetTarget, meetNumber, missTarget, missNumber);
 
             if (max == renderer.models.length) {
                 meetNumber = 1;
@@ -324,7 +337,7 @@ var MeshAdjuster = function (renderer, gl, stats) {
                 renderer.addMesh(gl);
                 max++;
                 meetNumber++;
-                console.log('addMesh');
+                //console.log('addMesh');
                 unstable = 0;
                 meetTarget = 0;
             }
@@ -335,7 +348,7 @@ var MeshAdjuster = function (renderer, gl, stats) {
                     min--;
                 }
                 missNumber++;
-                console.log('removeMesh');
+                //console.log('removeMesh');
                 unstable = 0;
                 missTarget = 0;
             }
@@ -346,7 +359,12 @@ var MeshAdjuster = function (renderer, gl, stats) {
         clearInterval(handle);
     }
 
+    var setFps = function(fps) {
+        targetFps = fps;
+    };
+
     return {
+        setFps: setFps,
         start: start,
         stop: stop,
         reset: reset
