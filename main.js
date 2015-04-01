@@ -303,15 +303,18 @@ var MeshAdjuster = function (renderer, gl, stats) {
         targetFps = fps;
         meetTarget = 0;
         missTarget = 0;
-        unstable = 0;
         meetNumber = 1;
-        missNumber = 3;
+        missNumber = 1;
         max = renderer.models.length;
         min = renderer.models.length;
     };
 
     var start = function() {
         handle = setInterval(function() {
+            if (unstable > 0) {
+                unstable--;
+                return;
+            }
             var fps = stats.getFps();
             if (fps >= targetFps) {
                 meetTarget++;
@@ -334,22 +337,21 @@ var MeshAdjuster = function (renderer, gl, stats) {
             if (min > renderer.models.length) {
                 //console.log('reset missNumber.');
                 min = renderer.models.length;
-                missNumber = 3;
+                missNumber = 1;
             }
 
             if (meetTarget >= meetNumber && missTarget == 0) {
                 renderer.addMesh(gl);
-                meetNumber++;
+                meetNumber+=1;
                 //console.log('addMesh');
-                unstable = 0;
                 meetTarget = 0;
             }
 
             if (missTarget >= missNumber && meetTarget == 0) {
                 renderer.removeMesh();
-                missNumber++;
+                unstable = 1;
+                missNumber+=1;
                 //console.log('removeMesh');
-                unstable = 0;
                 missTarget = 0;
             }
         }, 1000);
