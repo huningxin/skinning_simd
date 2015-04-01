@@ -287,7 +287,10 @@ define([
     // but have you SEEN how those mtr files are structured?
     Md5Mesh.prototype._loadMeshTextures = function(gl, mesh, callback) {
         // Attempt to load actual textures
-        glUtil.loadTexture(gl, BASE_PATH + mesh.shader + '.png', function(texture) {
+        var simd = '';
+        if (useSIMD)
+            simd = '_simd';
+        glUtil.loadTexture(gl, BASE_PATH + mesh.shader + simd + '.png', function(texture) {
             mesh.diffuseMap = texture;
             glUtil.loadTexture(gl, BASE_PATH + mesh.shader + '_s.png', function(texture) {
                 mesh.specularMap = texture;
