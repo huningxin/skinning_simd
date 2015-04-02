@@ -45,7 +45,7 @@ define([
         this.fullscreenElement = null;
         this.fullscreenSupported = false;
         this.mobileDevice = false;
-        this.forceMobile = false;
+        this.forceMobile = true;
         this.lastWidth = 0;
         this.renderer = null;
         this.canvasScale = 1.0;

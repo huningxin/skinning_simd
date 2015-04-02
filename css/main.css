@@ -7,47 +7,48 @@
 }
 
 .w600 {
-  width: 854px;
+  width: 100%;
+  height: 100%;
 }
 
 .mesh {
   position:absolute;
-  top:480px;
+  top:85%;
   color:white;
   font-weight:bold;
   font-size:40pt;
-  width:854px;
+  width: 100%;
 }
 
 .simd {
   position:absolute;
-  top:80px;
+  top:10%;
   color:white;
   font-weight:bold;
   font-size:40pt;
-  width: 854px;
+  width: 100%;
 }
 
 .loading {
   position:absolute;
-  top:280px;
+  top:50%;
   color:white;
   font-weight:bold;
   font-size:40pt;
-  width: 854px;
+  width: 100%;
 }
 
 .author0 {
   font-size:8pt;
   position:absolute;
-  bottom:0px;
+  bottom: 15px;
   right:0;
 }
 
 .author1 {
   font-size:8pt;
   position:absolute;
-  bottom:-15px;
+  bottom: 0px;
   right:0;
 }
 
@@ -108,15 +109,15 @@ body {
     display: block;
     margin: auto;
     position: relative;
-    width: 854px;
-    height: 480px;
+    width: 80%;
+    height: 80%;
     background-color: #330000; /* Will display red background if something went wrong during context creation */
 }
 
 #stats {
     position: absolute;
-    top: 5px;
-    left: -15px;
+    bottom: 5px;
+    left: 0px;
 }
 
 #targetFpsInput {
