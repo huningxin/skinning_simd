@@ -45,6 +45,7 @@ define([
     }
     
     var Md5Mesh = function() {
+        this.simd = false
         this.joints = null;
         this.jointsData = null;
         this.meshes = null;
@@ -288,7 +289,7 @@ define([
     Md5Mesh.prototype._loadMeshTextures = function(gl, mesh, callback) {
         // Attempt to load actual textures
         var simd = '';
-        if (useSIMD)
+        if (this.simd)
             simd = '_simd';
         glUtil.loadTexture(gl, BASE_PATH + mesh.shader + simd + '.png', function(texture) {
             mesh.diffuseMap = texture;

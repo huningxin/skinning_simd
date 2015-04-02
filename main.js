@@ -153,6 +153,8 @@ require([
     Renderer.prototype.addMesh = function(gl) {
         var self = this;
         var model = new MD5.Md5Mesh();
+        if (autoAdjust && useSimd)
+            model.simd = true;
         model.load(gl, 'models/md5/monsters/hellknight/hellknight.md5mesh', function(mesh) {
             var x = 0;
             var y = 0;
