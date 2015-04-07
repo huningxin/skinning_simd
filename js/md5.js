@@ -369,8 +369,6 @@ define([
                 nx = 0; ny = 0; nz = 0;
                 tx = 0; ty = 0; tz = 0;
 
-                vert.pos = [0, 0, 0];
-
                 for (var k = 0; k < vert.weight.count; ++k) {
                     var weight = mesh.weights[vert.weight.index + k];
                     var joint = joints[weight.joint];
@@ -379,9 +377,6 @@ define([
                     quat4.multiplyVec3(joint.orient, weight.pos, rotatedPos);
 
                     // Translate position
-                    vert.pos[0] += (joint.pos[0] + rotatedPos[0]) * weight.bias;
-                    vert.pos[1] += (joint.pos[1] + rotatedPos[1]) * weight.bias;
-                    vert.pos[2] += (joint.pos[2] + rotatedPos[2]) * weight.bias;
                     vx += (joint.pos[0] + rotatedPos[0]) * weight.bias;
                     vy += (joint.pos[1] + rotatedPos[1]) * weight.bias;
                     vz += (joint.pos[2] + rotatedPos[2]) * weight.bias;
