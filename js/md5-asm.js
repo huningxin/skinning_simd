@@ -38,12 +38,6 @@ define([
     var VERTEX_ELEMENTS = 11; // 3 Pos, 2 UV, 3 Norm, 3 Tangent
     var VERTEX_STRIDE = 44;
 
-    var MODEL_HEADER_ELEMENTS = 2; // meshes.length, joints.length
-    var MESH_HEADER_ELEMENTS = 2; // verts.length, weights.length 
-    var MESH_VERTEX_ELEMENTS = 4; // texCoord(f2), weight index (i1), weight count (i1)
-    var MESH_WEIGHT_ELEMENTS = 14; // joint (i1), bias (f1), pos (f4), normal (f4), tangent (f4)
-    var JOINT_ELEMENTS = 8; // pos (f4), orient (f4)
-
     var useSIMD = false;
 
     var setSIMD = function(set) {
@@ -56,7 +50,7 @@ define([
         this.meshes = null;
         this.pos = vec3.create([0.0, 0.0, 0.0]);
         this.mesh_texture_loaded = 0;
-        this.buffer = new ArrayBuffer(8 * 1024 * 1024);
+        this.buffer = new ArrayBuffer(1 * 1024 * 1024);
         this.f32Array = new Float32Array(this.buffer);
         this.i32Array = new Int32Array(this.buffer);
         this.asmSkin = _asmjsModule(window, null, this.buffer).skin;
@@ -277,16 +271,18 @@ define([
         var f32Array = this.f32Array;
         var i32Array = this.i32Array;
         // layout: meshesBase, meshesLength, jointsBase, jointsLength, vertArrayBase
-        i32Array[0] = 5; // meshes base
+        const MESHES_BASE = 5;
+        i32Array[0] = MESHES_BASE; // meshes base
         i32Array[1] = this.meshes.length;
         i32Array[2] = 0; // joints base
         i32Array[3] = this.joints.length;
         i32Array[4] = 0; // vertArray base
-        var offset = 5 + meshes.length; // bases of each mesh
-        for(var i = 0; i < meshes.length; ++i) {
-            var mesh = meshes[i];
+        // layout: base of each mesh
+        var offset = MESHES_BASE + this.meshes.length; // bases of each mesh
+        for(var i = 0; i < this.meshes.length; ++i) {
+            var mesh = this.meshes[i];
             // set base of mesh
-            i32Array[5 + i] = offset;
+            i32Array[MESHES_BASE + i] = offset;
             // layout: vertOffset, vertsBase, vertsLength, weightsBase, weightsLength
             i32Array[offset++] = mesh.offset;
             var vertsBaseOffset = offset++;
@@ -303,8 +299,7 @@ define([
             }
             i32Array[weightsBaseOffset] = offset;
             for (var j = 0; j < mesh.weights.length; ++j) {
-                var weight = mesh.meights[j];
-                var offset = mesh.weightsBase;
+                var weight = mesh.weights[j];
                 i32Array[offset++] = weight.joint;
                 f32Array[offset++] = weight.bias;
                 f32Array[offset++] = weight.pos[0];
@@ -322,7 +317,7 @@ define([
             }
         }
 
-        i32Array[3] = offset; // joints base;
+        i32Array[2] = offset; // joints base;
         this.jointsArray = new Float32Array(this.buffer, offset * 4);
 
         i32Array[offset++] = this.joints.length;
@@ -339,6 +334,9 @@ define([
         }
 
         i32Array[4] = offset; // vertArray base;
+        f32Array[offset] = 1;
+        f32Array[offset+1] = 2;
+        f32Array[offset+2] = 3;
         this.vertArray = new Float32Array(this.buffer, offset * 4);
     }
         
@@ -362,9 +360,9 @@ define([
 
         // Fill the vertex buffer
         if (!useSIMD)
-            this._skin();
-        else
-            this._skinSIMD();
+            //this._skin();
+        //else
+        //    this._skinSIMD();
         this.vertBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, this.vertArray, gl.STATIC_DRAW);
@@ -388,8 +386,6 @@ define([
         var toF = global.Math.fround;
 
         const VERTEX_ELEMENTS = 11; // 3 Pos, 2 UV, 3 Norm, 3 Tangent
-        const MODEL_HEADER_ELEMENTS = 2; // meshes.length, joints.length
-        const MESH_HEADER_ELEMENTS = 2; // verts.length, weights.length 
         const MESH_VERTEX_ELEMENTS = 4; // texCoord(f2), weight index (i1), weight count (i1)
         const MESH_WEIGHT_ELEMENTS = 14; // joint (i1), bias (f1), pos (f4), normal (f4), tangent (f4)
         const JOINT_ELEMENTS = 8; // pos (f4), orient (f4)
@@ -411,7 +407,7 @@ define([
             var meshBase = 0, meshOffset = 0, vertsBase = 0, vertsLength = 0,
                 weightsBase = 0, weightsLength = 0, vert = 0, vertWeightsCount = 0,
                 vertWeightsIndex = 0, weight = 0, joint = 0, offset = 0,
-                weightBias = toF(0);
+                weightBias = toF(0), jointIndex = 0;
 
             meshesBase = i32Array[0]|0; meshesLength = i32Array[1]|0;
             jointsBase = i32Array[2]|0; jointsLength = i32Array[3]|0;
@@ -419,35 +415,36 @@ define([
             
             for(i = 0; (i|0) < (meshesLength|0); i = (i + 1)|0) {
                 meshBase = i32Array[((meshesBase + i)<<2)>>2]|0;
-                meshOffset = i32Array[((meshBase)<<2)>>2]|0 + vertArrayBase;
-
-                // Calculate transformed vertices in the bind pose
+                meshOffset = (i32Array[((meshBase)<<2)>>2]|0) + vertArrayBase;
                 vertsBase = i32Array[((meshBase + 1)<<2)>>2]|0;
                 vertsLength = i32Array[((meshBase + 2)<<2)>>2]|0
                 weightsBase = i32Array[((meshBase + 3)<<2)>>2]|0;
                 weightsLength = i32Array[((meshBase + 4)<<2)>>2]|0;
+
+                // Calculate transformed vertices in the bind pose
                 for(j = 0; (j|0) < (vertsLength|0); j = (j + 1)|0) {
-                    offset = imul(j, VERTEX_ELEMENTS)|0 + meshOffset|0;
-                    vert = vertsBase|0 + imul(j, MESH_VERTEX_ELEMENTS)|0;
+                    offset = (imul(j, VERTEX_ELEMENTS)|0) + (meshOffset|0);
+                    vert = (vertsBase|0) + (imul(j, MESH_VERTEX_ELEMENTS)|0);
 
                     vx = toF(0); vy = toF(0); vz = toF(0);
                     nx = toF(0); ny = toF(0); nz = toF(0);
                     tx = toF(0); ty = toF(0); tz = toF(0);
 
-                    vertWeightsCount = i32Array[((vert + 2)<<2)>>2]|0;
-                    vertWeightsIndex = i32Array[((vert + 3)<<2)>>2]|0;
+                    vertWeightsIndex = i32Array[((vert + 2)<<2)>>2]|0;
+                    vertWeightsCount = i32Array[((vert + 3)<<2)>>2]|0;
                     for (k = 0; (k|0) < (vertWeightsCount|0); k = (k + 1)|0) {
-                        weight = weightsBase + vertWeightsIndex + imul(k, MESH_WEIGHT_ELEMENTS)|0;
-                        joint = jointsBase + imul(i32Array[((weight + 0)<<2)>>2], JOINT_ELEMENTS)|0;
+                        weight = weightsBase + imul(k + vertWeightsIndex, MESH_WEIGHT_ELEMENTS)|0;
+                        jointIndex = i32Array[((weight + 0)<<2)>>2]|0;
+                        joint = jointsBase + imul(jointIndex, JOINT_ELEMENTS)|0;
 
                         // Rotate position
                         x = toF(f32Array[((weight + 2)<<2)>>2]);
                         y = toF(f32Array[((weight + 3)<<2)>>2]);
                         z = toF(f32Array[((weight + 4)<<2)>>2]);
-                        qx = toF(f32Array[((joint + 5)<<2)>>2]);
-                        qy = toF(f32Array[((joint + 6)<<2)>>2]);
-                        qz = toF(f32Array[((joint + 7)<<2)>>2]);
-                        qw = toF(f32Array[((joint + 8)<<2)>>2]);
+                        qx = toF(f32Array[((joint + 4)<<2)>>2]);
+                        qy = toF(f32Array[((joint + 5)<<2)>>2]);
+                        qz = toF(f32Array[((joint + 6)<<2)>>2]);
+                        qw = toF(f32Array[((joint + 7)<<2)>>2]);
 
                         // calculate quat * vec
                         ix = toF(toF(toF(toF(qw) * toF(x)) + toF(toF(qy) * toF(z))) - toF(toF(qz) * toF(y)));
@@ -462,9 +459,9 @@ define([
 
                         // Translate position
                         weightBias = toF(f32Array[((weight + 1)<<2)>>2]);
-                        vx = toF(toF(toF(toF(f32Array[((joint + 1)<<2)>>2]) + toF(rx)) * toF(weightBias)) + toF(vx));
-                        vy = toF(toF(toF(toF(f32Array[((joint + 2)<<2)>>2]) + toF(ry)) * toF(weightBias)) + toF(vy));
-                        vz = toF(toF(toF(toF(f32Array[((joint + 3)<<2)>>2]) + toF(rz)) * toF(weightBias)) + toF(vz));
+                        vx = toF(toF(toF(toF(f32Array[((joint + 0)<<2)>>2]) + toF(rx)) * toF(weightBias)) + toF(vx));
+                        vy = toF(toF(toF(toF(f32Array[((joint + 1)<<2)>>2]) + toF(ry)) * toF(weightBias)) + toF(vy));
+                        vz = toF(toF(toF(toF(f32Array[((joint + 2)<<2)>>2]) + toF(rz)) * toF(weightBias)) + toF(vz));
 
                         // Rotate Normal
                         x = toF(f32Array[((weight + 6)<<2)>>2]);
@@ -491,7 +488,6 @@ define([
                         y = toF(f32Array[((weight + 11)<<2)>>2]);
                         z = toF(f32Array[((weight + 12)<<2)>>2]);
 
-                        // calculate quat * vec
                         // calculate quat * vec
                         ix = toF(toF(toF(toF(qw) * toF(x)) + toF(toF(qy) * toF(z))) - toF(toF(qz) * toF(y)));
                         iy = toF(toF(toF(toF(qw) * toF(y)) + toF(toF(qz) * toF(x))) - toF(toF(qx) * toF(z)));
@@ -542,6 +538,7 @@ define([
     
     // Skins the vertexArray with the given joint set
     // Passing null to joints results in the bind pose
+    var first = 1;
     Md5Mesh.prototype._skin = function(joints, vertArray, arrayOffset) {
         if(!joints) { joints = this.joints; }
         if(!vertArray) { vertArray = this.vertArray }
@@ -572,8 +569,17 @@ define([
                     var weight = mesh.weights[vert.weight.index + k];
                     var joint = joints[weight.joint];
 
+                    if (first|0 == 1|0) {
+                        console.log('weight.pos: ', weight.pos);
+                        console.log('weight.joint: ', weight.joint);
+                        console.log('joint.orient: ', joint.orient);
+                    }
+
                     // Rotate position
                     quat4.multiplyVec3(joint.orient, weight.pos, rotatedPos);
+                    if (first|0 == 1|0) {
+                        console.log('rotatedPos: ', rotatedPos);
+                    }
 
                     // Translate position
                     vx += (joint.pos[0] + rotatedPos[0]) * weight.bias;
@@ -593,10 +599,21 @@ define([
                     tz += rotatedPos[2] * weight.bias;
                 }
 
+                if (first|0 == 1|0) {
+                    console.log('offset: ', offset);
+                    console.log('store: ', vx, vy, vz);
+                    console.log('store: ', nx, ny, nz);
+                    console.log('store: ', tx, ty, tz);
+                }
                 // Position
                 vertArray[offset] = vx;
                 vertArray[offset+1] = vy;
                 vertArray[offset+2] = vz;
+
+                if (first|0 == 1|0) {
+                    console.log('vertArray: ', vertArray[offset], vertArray[offset+1], vertArray[offset+2]);
+                    first = 0;
+                }
 
                 // TexCoord
                 vertArray[offset+3] = vert.texCoord[0];
@@ -721,7 +738,9 @@ define([
             }
         }
     };
-        
+    
+    var a = 1;
+
     Md5Mesh.prototype.setAnimationFrame = function(gl, animation, frame) {
         animation.getFrameJoints(frame, this.jointsArray);
         if (!useSIMD) {
@@ -851,6 +870,8 @@ define([
             anim.frames.push(frame);
         });
     };
+
+    var second = 1;
         
     Md5Anim.prototype.getFrameJoints = function(frame, jointsArray) {
         frame = frame % this.frames.length;
@@ -915,14 +936,18 @@ define([
             }
 
             joints.push({pos: aPos, orient: aOrient});
-            jointsArray[jointsOffset++] = aPos[0];
-            jointsArray[jointsOffset++] = aPos[1];
-            jointsArray[jointsOffset++] = aPos[2];
+        }
+
+        for (var i = 0; i < joints.length; ++i) {
+            var joint = joints[i];
+            jointsArray[jointsOffset++] = joint.pos[0];
+            jointsArray[jointsOffset++] = joint.pos[1];
+            jointsArray[jointsOffset++] = joint.pos[2];
             jointsArray[jointsOffset++] = 0;
-            jointsArray[jointsOffset++] = aOrient[0];
-            jointsArray[jointsOffset++] = aOrient[1];
-            jointsArray[jointsOffset++] = aOrient[2];
-            jointsArray[jointsOffset++] = aOrient[3];
+            jointsArray[jointsOffset++] = joint.orient[0];
+            jointsArray[jointsOffset++] = joint.orient[1];
+            jointsArray[jointsOffset++] = joint.orient[2];
+            jointsArray[jointsOffset++] = joint.orient[3];
         }
     };
 
