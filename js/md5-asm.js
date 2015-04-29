@@ -415,7 +415,7 @@ define([
             
             for(i = 0; (i|0) < (meshesLength|0); i = (i + 1)|0) {
                 meshBase = i32Array[((meshesBase + i)<<2)>>2]|0;
-                meshOffset = (i32Array[((meshBase)<<2)>>2]|0) + vertArrayBase;
+                meshOffset = ((i32Array[((meshBase)<<2)>>2]|0) + (vertArrayBase|0))|0;
                 vertsBase = i32Array[((meshBase + 1)<<2)>>2]|0;
                 vertsLength = i32Array[((meshBase + 2)<<2)>>2]|0
                 weightsBase = i32Array[((meshBase + 3)<<2)>>2]|0;
@@ -423,8 +423,8 @@ define([
 
                 // Calculate transformed vertices in the bind pose
                 for(j = 0; (j|0) < (vertsLength|0); j = (j + 1)|0) {
-                    offset = (imul(j, VERTEX_ELEMENTS)|0) + (meshOffset|0);
-                    vert = (vertsBase|0) + (imul(j, MESH_VERTEX_ELEMENTS)|0);
+                    offset = ((imul(j, VERTEX_ELEMENTS)|0) + (meshOffset|0))|0;
+                    vert = ((vertsBase|0) + (imul(j, MESH_VERTEX_ELEMENTS)|0))|0;
 
                     vx = toF(0); vy = toF(0); vz = toF(0);
                     nx = toF(0); ny = toF(0); nz = toF(0);
