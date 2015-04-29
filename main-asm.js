@@ -6,7 +6,7 @@ require([
     "util/gl-context-helper",
     "util/camera",
     "util/gl-util",
-    "md5",
+    "md5-asm",
     "util/gl-matrix-min",
     "js/util/game-shim.js",
     "js/util/Stats.js"

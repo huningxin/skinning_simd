@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+
+<!--
+Copyright (c) 2012 Brandon Jones
+Copyright (c) 2015 Ningxin Hu
+
+This software is provided 'as-is', without any express or implied
+warranty. In no event will the authors be held liable for any damages
+arising from the use of this software.
+
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it
+freely, subject to the following restrictions:
+
+    1. The origin of this software must not be misrepresented; you must not
+    claim that you wrote the original software. If you use this software
+    in a product, an acknowledgment in the product documentation would be
+    appreciated but is not required.
+
+    2. Altered source versions must be plainly marked as such, and must not
+    be misrepresented as being the original software.
+
+    3. This notice may not be removed or altered from any source
+    distribution.
+-->
+
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+        <title>SIMD Demo: Skeletal Animation (Skinning)</title>
+        <link href="css/main.css" rel="stylesheet" type="text/css" />
+    </head>
+    <body>
+    <div id="content" class="center w600" style="position:relative">
+        <div class="elem-center">
+        <div id="autoBtn" type="button" class="btn btn-primary btn-large">
+            <label id="targetFpsInputLable" for="targetFps"><span id="autoBtnLable">Start</span> (Target FPS): </label>
+            <input id="targetFpsInput" type="number" value="60" min="1" max="60" maxlength="2"/>
+        </div>
+        <button id="simdBtn" type="button" class="btn btn-primary btn-large">Use SIMD</button>
+        <button id="addBtn" type="button" class="btn btn-primary btn-large">Add Mesh</button>
+        <button id="removeBtn" type="button" class="btn btn-primary btn-large">Remove Mesh</button>
+        <!--button id="autoBtn" type="button" class="btn btn-primary btn-large">Start</button-->
+        </div>
+        <br />
+        <div class="elem-center"><canvas id="webgl-canvas"></canvas>
+        <div class="author0">This demo is based on Brandon Jones (Toji)'s <a href="http://media.tojicode.com/webgl-samples/md5Mesh.html">md5Mesh</a>.</div>
+        <div class="author1">The <a href="https://github.com/huningxin/skinning_simd">SIMD.js version</a> is created by Ningxin Hu of Intel Corporation.</div>
+        <div class="elem-center mesh">Meshes: <span id="meshes">0</span></div>
+        <div class="elem-center simd"><span id="info">No SIMD</span></div>
+        <div id="loading" class="elem-center loading">Loading assets...</div>
+        <br />
+        <div class="elem-center">
+        </div>
+    </div>
+    <script src="js/util/require.js"></script>
+    <script src="main-asm.js"></script>
+    </body>
+</html>
