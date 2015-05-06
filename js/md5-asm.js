@@ -54,6 +54,7 @@ define([
         this.f32Array = new Float32Array(this.buffer);
         this.i32Array = new Int32Array(this.buffer);
         this.asmSkin = _asmjsModule(window, null, this.buffer).skin;
+        this.asmSkinSIMD = _asmjsModule(window, null, this.buffer).skinSIMD;
         this.jointsArray = null;
     }; 
 
@@ -379,11 +380,21 @@ define([
     };
 
     function _asmjsModule (global, imp, buffer) {
-        "use asm"
+        "use asm";
         var f32Array = new global.Float32Array(buffer);
         var i32Array = new global.Int32Array(buffer);
+        var u8Array = new global.Uint8Array(buffer);
         var imul = global.Math.imul;
         var toF = global.Math.fround;
+        var SIMD_float32x4 = global.SIMD.float32x4;
+        var SIMD_float32x4_load = SIMD_float32x4.load;
+        var SIMD_float32x4_store = SIMD_float32x4.store;
+        var SIMD_float32x4_mul = SIMD_float32x4.mul;
+        var SIMD_float32x4_add = SIMD_float32x4.add;
+        var SIMD_float32x4_sub = SIMD_float32x4.sub;
+        var SIMD_float32x4_swizzle = SIMD_float32x4.swizzle;
+        var SIMD_float32x4_loadX = SIMD_float32x4.loadX;
+        var SIMD_float32x4_splat = SIMD_float32x4.splat;
 
         const VERTEX_ELEMENTS = 11; // 3 Pos, 2 UV, 3 Norm, 3 Tangent
         const MESH_VERTEX_ELEMENTS = 4; // texCoord(f2), weight index (i1), weight count (i1)
@@ -527,7 +538,126 @@ define([
         }
 
         function skinSIMD() {
+            var i = 0, j = 0, k = 0;
+            var meshesBase = 0, meshesLength = 0,
+                jointsBase = 0, jointsLength = 0,
+                vertArrayBase = 0;
 
+            var meshBase = 0, meshOffset = 0, vertsBase = 0, vertsLength = 0,
+                weightsBase = 0, weightsLength = 0, vert = 0, vertWeightsCount = 0,
+                vertWeightsIndex = 0, weight = 0, joint = 0, offset = 0, jointIndex = 0;
+                
+            var rotatedPos = SIMD_float32x4(0, 0, 0, 0), jointOrient = SIMD_float32x4(0, 0, 0, 0),
+                weightPos = SIMD_float32x4(0, 0, 0, 0), ix4 = SIMD_float32x4(0, 0, 0, 0),
+                jointPos = SIMD_float32x4(0, 0, 0, 0), weightBias = SIMD_float32x4(0, 0, 0, 0),
+                vx4 = SIMD_float32x4(0, 0, 0, 0), weightNormal = SIMD_float32x4(0, 0, 0, 0),
+                nx4 = SIMD_float32x4(0, 0, 0, 0), weightTangent = SIMD_float32x4(0, 0, 0, 0),
+                tempx4 = SIMD_float32x4(1, 1, 1, -1), tx4 = SIMD_float32x4(0, 0, 0, 0);
+
+            meshesBase = i32Array[0]|0; meshesLength = i32Array[1]|0;
+            jointsBase = i32Array[2]|0; jointsLength = i32Array[3]|0;
+            vertArrayBase = i32Array[4]|0;
+            
+            for(i = 0; (i|0) < (meshesLength|0); i = (i + 1)|0) {
+                meshBase = i32Array[((meshesBase + i)<<2)>>2]|0;
+                meshOffset = ((i32Array[((meshBase)<<2)>>2]|0) + (vertArrayBase|0))|0;
+                vertsBase = i32Array[((meshBase + 1)<<2)>>2]|0;
+                vertsLength = i32Array[((meshBase + 2)<<2)>>2]|0;
+                weightsBase = i32Array[((meshBase + 3)<<2)>>2]|0;
+                weightsLength = i32Array[((meshBase + 4)<<2)>>2]|0;
+                
+                // Calculate transformed vertices in the bind pose
+                for(j = 0; (j|0) < (vertsLength|0); j = (j + 1)|0) {
+                    offset = ((imul(j, VERTEX_ELEMENTS)|0) + (meshOffset|0))|0;
+                    vert = ((vertsBase|0) + (imul(j, MESH_VERTEX_ELEMENTS)|0))|0;
+                    
+                    vx4 = SIMD_float32x4_splat(toF(0));
+                    nx4 = SIMD_float32x4_splat(toF(0));
+                    tx4 = SIMD_float32x4_splat(toF(0));
+
+                    vertWeightsIndex = i32Array[((vert + 2)<<2)>>2]|0;
+                    vertWeightsCount = i32Array[((vert + 3)<<2)>>2]|0;
+                    for (k = 0; (k|0) < (vertWeightsCount|0); k = (k + 1)|0) {
+                        weight = weightsBase + imul(k + vertWeightsIndex, MESH_WEIGHT_ELEMENTS)|0;
+                        jointIndex = i32Array[((weight + 0)<<2)>>2]|0;
+                        joint = jointsBase + imul(jointIndex, JOINT_ELEMENTS)|0;
+
+                        // Rotate position
+                        jointOrient = SIMD_float32x4_load(u8Array, (joint + 4)<<2);
+                        weightPos = SIMD_float32x4_load(u8Array, (weight + 2)<<2);
+                        ix4 = SIMD_float32x4_sub(
+                            SIMD_float32x4_add(
+                                SIMD_float32x4_mul(SIMD_float32x4_mul(SIMD_float32x4_swizzle(jointOrient, 3, 3, 3, 0), tempx4),
+                                                   SIMD_float32x4_swizzle(weightPos, 0, 1, 2, 0)),
+                                SIMD_float32x4_mul(SIMD_float32x4_mul(SIMD_float32x4_swizzle(jointOrient, 1, 2, 0, 1), tempx4),
+                                                   SIMD_float32x4_swizzle(weightPos, 2, 0, 1, 1))),
+                            SIMD_float32x4_mul(SIMD_float32x4_swizzle(jointOrient, 2, 0, 1, 2),
+                                               SIMD_float32x4_swizzle(weightPos, 1, 2, 0, 2)));
+    
+                        rotatedPos = SIMD_float32x4_add(
+                            SIMD_float32x4_sub(SIMD_float32x4_mul(ix4, SIMD_float32x4_swizzle(jointOrient, 3, 3, 3, 0)),
+                                               SIMD_float32x4_mul(SIMD_float32x4_swizzle(ix4, 3, 3, 3, 0), jointOrient)),
+                            SIMD_float32x4_sub(SIMD_float32x4_mul(SIMD_float32x4_swizzle(ix4, 2, 0, 1, 0), SIMD_float32x4_swizzle(jointOrient, 1, 2, 0, 0)),
+                                               SIMD_float32x4_mul(SIMD_float32x4_swizzle(ix4, 1, 2, 0, 0), SIMD_float32x4_swizzle(jointOrient, 2, 0, 1, 0))));
+    
+                        jointPos = SIMD_float32x4_load(u8Array, (joint + 0)<<2);
+                        weightBias = SIMD_float32x4_swizzle(SIMD_float32x4_loadX(u8Array, (weight + 1)<<2), 0, 0, 0, 0);
+    
+                        // Translate position
+                        vx4 = SIMD_float32x4_add(vx4, SIMD_float32x4_mul(SIMD_float32x4_add(jointPos, rotatedPos), weightBias));
+    
+                        // Rotate Normal
+                        weightNormal = SIMD_float32x4_load(u8Array, (weight + 6)<<2);
+                        ix4 = SIMD_float32x4_sub(
+                            SIMD_float32x4_add(
+                                SIMD_float32x4_mul(SIMD_float32x4_mul(SIMD_float32x4_swizzle(jointOrient, 3, 3, 3, 0), tempx4),
+                                                   SIMD_float32x4_swizzle(weightNormal, 0, 1, 2, 0)),
+                                SIMD_float32x4_mul(SIMD_float32x4_mul(SIMD_float32x4_swizzle(jointOrient, 1, 2, 0, 1), tempx4),
+                                                   SIMD_float32x4_swizzle(weightNormal, 2, 0, 1, 1))),
+                            SIMD_float32x4_mul(SIMD_float32x4_swizzle(jointOrient, 2, 0, 1, 2),
+                                               SIMD_float32x4_swizzle(weightNormal, 1, 2, 0, 2)));
+    
+                        rotatedPos = SIMD_float32x4_add(
+                            SIMD_float32x4_sub(SIMD_float32x4_mul(ix4, SIMD_float32x4_swizzle(jointOrient, 3, 3, 3, 0)),
+                                               SIMD_float32x4_mul(SIMD_float32x4_swizzle(ix4, 3, 3, 3, 0), jointOrient)),
+                            SIMD_float32x4_sub(SIMD_float32x4_mul(SIMD_float32x4_swizzle(ix4, 2, 0, 1, 0), SIMD_float32x4_swizzle(jointOrient, 1, 2, 0, 0)),
+                                               SIMD_float32x4_mul(SIMD_float32x4_swizzle(ix4, 1, 2, 0, 0), SIMD_float32x4_swizzle(jointOrient, 2, 0, 1, 0))));
+    
+                        nx4 = SIMD_float32x4_add(nx4, SIMD_float32x4_mul(rotatedPos, weightBias))
+    
+                        // Rotate Tangent
+                        weightTangent = SIMD_float32x4_load(u8Array, (weight + 10)<<2);
+                        ix4 = SIMD_float32x4_sub(
+                            SIMD_float32x4_add(
+                                SIMD_float32x4_mul(SIMD_float32x4_mul(SIMD_float32x4_swizzle(jointOrient, 3, 3, 3, 0), tempx4),
+                                                   SIMD_float32x4_swizzle(weightTangent, 0, 1, 2, 0)),
+                                SIMD_float32x4_mul(SIMD_float32x4_mul(SIMD_float32x4_swizzle(jointOrient, 1, 2, 0, 1), tempx4),
+                                                   SIMD_float32x4_swizzle(weightTangent, 2, 0, 1, 1))),
+                            SIMD_float32x4_mul(SIMD_float32x4_swizzle(jointOrient, 2, 0, 1, 2),
+                                               SIMD_float32x4_swizzle(weightTangent, 1, 2, 0, 2)));
+    
+                        rotatedPos = SIMD_float32x4_add(
+                            SIMD_float32x4_sub(SIMD_float32x4_mul(ix4, SIMD_float32x4_swizzle(jointOrient, 3, 3, 3, 0)),
+                                               SIMD_float32x4_mul(SIMD_float32x4_swizzle(ix4, 3, 3, 3, 0), jointOrient)),
+                            SIMD_float32x4_sub(SIMD_float32x4_mul(SIMD_float32x4_swizzle(ix4, 2, 0, 1, 0), SIMD_float32x4_swizzle(jointOrient, 1, 2, 0, 0)),
+                                               SIMD_float32x4_mul(SIMD_float32x4_swizzle(ix4, 1, 2, 0, 0), SIMD_float32x4_swizzle(jointOrient, 2, 0, 1, 0))));
+    
+                        tx4 = SIMD_float32x4_add(tx4, SIMD_float32x4_mul(rotatedPos, weightBias))
+                    }
+    
+                    // Position
+                    SIMD_float32x4_store(u8Array, offset<<2, vx4);
+    
+                    // TexCoord
+                    SIMD_float32x4_store(u8Array, (offset + 3)<<2, SIMD_float32x4_load(u8Array, (vert + 0)<<2));
+    
+                    // Normal
+                    SIMD_float32x4_store(u8Array, (offset + 5)<<2, nx4);
+    
+                    // Tangent
+                    SIMD_float32x4_store(u8Array, (offset + 8)<<2, tx4);
+                }
+            }
         }
 
         return {
@@ -746,7 +876,7 @@ define([
         if (!useSIMD) {
             this.asmSkin();
         } else {
-            this._skinSIMD();
+            this.asmSkinSIMD();
         }
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, this.vertArray, gl.STATIC_DRAW);
