@@ -55,7 +55,10 @@ define([
         this.i32Array = new Int32Array(this.buffer);
         this.asmSkin = _asmjsModule(window, null, this.buffer).skin;
         this.asmSkinSIMD = _asmjsModule(window, null, this.buffer).skinSIMD;
+        this.asmGetFrameJoints = _asmjsModule(window, null, this.buffer).getFrameJoints;
         this.jointsArray = null;
+        this.jointsArrayOffset = 0;
+        this.animationBase = 0;
     }; 
 
     Md5Mesh.prototype.load = function(gl, url, callback) {
@@ -271,6 +274,7 @@ define([
     Md5Mesh.prototype._initializeArrayBuffer = function() {
         var f32Array = this.f32Array;
         var i32Array = this.i32Array;
+        var numOfVerts = 0;
         // layout: meshesBase, meshesLength, jointsBase, jointsLength, vertArrayBase
         const MESHES_BASE = 5;
         i32Array[0] = MESHES_BASE; // meshes base
@@ -292,6 +296,7 @@ define([
             i32Array[offset++] = mesh.weights.length;
             i32Array[vertsBaseOffset] = offset;
             for(var j = 0; j < mesh.verts.length; ++j) {
+                numOfVerts++;
                 var vert = mesh.verts[j];
                 f32Array[offset++] = vert.texCoord[0];
                 f32Array[offset++] = vert.texCoord[1];
@@ -319,6 +324,7 @@ define([
         }
 
         i32Array[2] = offset; // joints base;
+        this.jointsArrayOffset = offset;
         this.jointsArray = new Float32Array(this.buffer, offset * 4);
 
         i32Array[offset++] = this.joints.length;
@@ -339,6 +345,8 @@ define([
         f32Array[offset+1] = 2;
         f32Array[offset+2] = 3;
         this.vertArray = new Float32Array(this.buffer, offset * 4);
+        
+        this.animationBase = offset + numOfVerts * VERTEX_ELEMENTS + 1;
     }
         
     // Creates the model's gl buffers and populates them with the bind-pose mesh
@@ -395,11 +403,17 @@ define([
         var SIMD_float32x4_swizzle = SIMD_float32x4.swizzle;
         var SIMD_float32x4_loadX = SIMD_float32x4.loadX;
         var SIMD_float32x4_splat = SIMD_float32x4.splat;
-
+        var sqrt = global.Math.sqrt;
+        var abs = global.Math.abs;
+        
         const VERTEX_ELEMENTS = 11; // 3 Pos, 2 UV, 3 Norm, 3 Tangent
         const MESH_VERTEX_ELEMENTS = 4; // texCoord(f2), weight index (i1), weight count (i1)
         const MESH_WEIGHT_ELEMENTS = 14; // joint (i1), bias (f1), pos (f4), normal (f4), tangent (f4)
         const JOINT_ELEMENTS = 8; // pos (f4), orient (f4)
+        
+        const HIERARCHY_ELEMENTS = 3; // parent (i), flags (i), index (i)
+        const BASEFRAME_ELEMENTS = 8; // pos (f4), orient (f4)
+        const FRAME_ELEMENTS = 1; // value (f)
 
         function skin() {
             var i = 0, j = 0, k = 0;
@@ -659,10 +673,134 @@ define([
                 }
             }
         }
+        
+        function getFrameJoints(frame, animationBase, jointsBase) {
+            frame = frame|0;
+            animationBase = animationBase|0;
+            jointsBase = jointsBase|0;
+            
+            var i = 0, j = 0,
+                baseFrameLength = 0, baseFrameBase = 0,
+                hierarchyLength = 0, hierarchyBase = 0,
+                framesArrayLength = 0, framesArrayBase = 0, framesBase = 0,
+                baseJointOffset = 0, hierarchyOffset = 0, frameIndex = 0, parentIndex = 0,
+                flags = 0,
+                posX = toF(0.0), posY = toF(0.0), posZ = toF(0.0), parentPosX = toF(0.0), parentPosY = toF(0.0), parentPosZ = toF(0.0),
+                orientX = toF(0.0), orientY = toF(0.0), orientZ = toF(0.0), orientW = toF(0.0),
+                parentOrientX = toF(0.0), parentOrientY = toF(0.0), parentOrientZ = toF(0.0), parentOrientW = toF(0.0),
+                ix = toF(0.0), iy = toF(0.0), iz = toF(0.0), iw = toF(0.0),
+                jointsOffset = 0,
+                temp = toF(0.0);
+            
+            hierarchyBase = i32Array[((animationBase + 0)<<2)>>2]|0;
+            hierarchyLength = i32Array[((animationBase + 1)<<2)>>2]|0;
+            baseFrameBase = i32Array[((animationBase + 2)<<2)>>2]|0;
+            baseFrameLength = i32Array[((animationBase + 3)<<2)>>2]|0;
+            framesArrayBase = i32Array[((animationBase + 4)<<2)>>2]|0;
+            framesArrayLength = i32Array[((animationBase + 5)<<2)>>2]|0;
+            
+            frame = ((frame|0) % (framesArrayLength|0))|0;
+            framesBase = i32Array[((framesArrayBase + (imul(frame, 2)|0)|0)<<2)>>2]|0;
+            
+            for (i = 0; (i|0) < (baseFrameLength|0); i = (i + 1)|0) {
+                baseJointOffset = ((baseFrameBase|0) + (imul(i, BASEFRAME_ELEMENTS)|0))|0;
+                posX = toF(f32Array[((baseJointOffset + 0)<<2)>>2]);
+                posY = toF(f32Array[((baseJointOffset + 1)<<2)>>2]);
+                posZ = toF(f32Array[((baseJointOffset + 2)<<2)>>2]);
+                orientX = toF(f32Array[((baseJointOffset + 4)<<2)>>2]);
+                orientY = toF(f32Array[((baseJointOffset + 5)<<2)>>2]);
+                orientZ = toF(f32Array[((baseJointOffset + 6)<<2)>>2]);
+                
+                hierarchyOffset = ((hierarchyBase|0) + (imul(i, HIERARCHY_ELEMENTS)|0))|0;
+                parentIndex = i32Array[((hierarchyOffset + 0)<<2)>>2]|0;
+                flags = i32Array[((hierarchyOffset + 1)<<2)>>2]|0;
+                frameIndex = i32Array[((hierarchyOffset + 2)<<2)>>2]|0;
+                
+                j = 0|0;
+                
+                if (flags & 1) { // Translate X
+                    posX = toF(f32Array[((framesBase + frameIndex + j)<<2)>>2]);
+                    j = (j + 1)|0;
+                }
+    
+                if (flags & 2) { // Translate Y
+                    posY = toF(f32Array[((framesBase + frameIndex + j)<<2)>>2]);
+                    j = (j + 1)|0;
+                }
+    
+                if (flags & 4) { // Translate Z
+                    posZ = toF(f32Array[((framesBase + frameIndex + j)<<2)>>2]);
+                    j = (j + 1)|0;
+                }
+    
+                if (flags & 8) { // Orient X
+                    orientX = toF(f32Array[((framesBase + frameIndex + j)<<2)>>2]);
+                    j = (j + 1)|0;
+                }
+    
+                if (flags & 16) { // Orient Y
+                    orientY = toF(f32Array[((framesBase + frameIndex + j)<<2)>>2]);
+                    j = (j + 1)|0;
+                }
+    
+                if (flags & 32) { // Orient Z
+                    orientZ = toF(f32Array[((framesBase + frameIndex + j)<<2)>>2]);
+                    j = (j + 1)|0;
+                }
+                
+                //orientW = toF(-toF(sqrt(toF(abs(toF(toF(toF(1.0) - toF(toF(orientX)*toF(orientX))) -
+                //    toF(toF(toF(orientY)*toF(orientY)) - toF(toF(orientZ)*toF(orientZ)))))))));
+                temp = toF(toF(toF(toF(1.0) - toF(orientX*orientX)) - toF(orientY*orientY)) - toF(orientZ*orientZ));
+                orientW = toF(-sqrt(abs(+temp)));
+                    
+                if ((parentIndex|0) >= (0|0)) {
+                    jointsOffset = ((jointsBase|0) + (imul(parentIndex, JOINT_ELEMENTS)|0))|0;
+                    parentPosX = toF(f32Array[((jointsOffset + 0)<<2)>>2]);
+                    parentPosY = toF(f32Array[((jointsOffset + 1)<<2)>>2]);
+                    parentPosZ = toF(f32Array[((jointsOffset + 2)<<2)>>2]);
+                    parentOrientX = toF(f32Array[((jointsOffset + 4)<<2)>>2]);
+                    parentOrientY = toF(f32Array[((jointsOffset + 5)<<2)>>2]);
+                    parentOrientZ = toF(f32Array[((jointsOffset + 6)<<2)>>2]);
+                    parentOrientW = toF(f32Array[((jointsOffset + 7)<<2)>>2]);
+                    
+                    ix = toF(toF(toF(toF(parentOrientW) * toF(posX)) + toF(toF(parentOrientY) * toF(posZ))) - toF(toF(parentOrientZ) * toF(posY)));
+                    iy = toF(toF(toF(toF(parentOrientW) * toF(posY)) + toF(toF(parentOrientZ) * toF(posX))) - toF(toF(parentOrientX) * toF(posZ)));
+                    iz = toF(toF(toF(toF(parentOrientW) * toF(posZ)) + toF(toF(parentOrientX) * toF(posY))) - toF(toF(parentOrientY) * toF(posX)));
+                    iw = toF(toF(toF(toF(-parentOrientX) * toF(posX)) - toF(toF(parentOrientY) * toF(posY))) - toF(toF(parentOrientZ) * toF(posZ)));
+
+                    posX = toF(toF(toF(toF(ix) * toF(parentOrientW)) + toF(toF(iw) * toF(-parentOrientX))) + toF(toF(toF(iy) * toF(-parentOrientZ)) - toF(toF(iz) * toF(-parentOrientY))));
+                    posY = toF(toF(toF(toF(iy) * toF(parentOrientW)) + toF(toF(iw) * toF(-parentOrientY))) + toF(toF(toF(iz) * toF(-parentOrientX)) - toF(toF(ix) * toF(-parentOrientZ))));
+                    posZ = toF(toF(toF(toF(iz) * toF(parentOrientW)) + toF(toF(iw) * toF(-parentOrientZ))) + toF(toF(toF(ix) * toF(-parentOrientY)) - toF(toF(iy) * toF(-parentOrientX))));
+
+                    posX = toF(posX + parentPosX);
+                    posY = toF(posY + parentPosY);
+                    posZ = toF(posZ + parentPosZ);
+                    
+                    ix = toF(toF(toF(toF(parentOrientX * orientW) + toF(parentOrientW * orientX)) + toF(parentOrientY * orientZ)) - toF(parentOrientZ * orientY));
+                    iy = toF(toF(toF(toF(parentOrientY * orientW) + toF(parentOrientW * orientY)) + toF(parentOrientZ * orientX)) - toF(parentOrientX * orientZ));
+                    iz = toF(toF(toF(toF(parentOrientZ * orientW) + toF(parentOrientW * orientZ)) + toF(parentOrientX * orientY)) - toF(parentOrientY * orientX));
+                    iw = toF(toF(toF(toF(parentOrientW * orientW) - toF(parentOrientX * orientX)) - toF(parentOrientY * orientY)) - toF(parentOrientZ * orientZ));
+                    orientX = ix;
+                    orientY = iy;
+                    orientZ = iz;
+                    orientW = iw;
+                }
+                
+                jointsOffset = ((jointsBase|0) + (imul(i, JOINT_ELEMENTS)|0))|0;
+                f32Array[((jointsOffset + 0)<<2)>>2] = posX;
+                f32Array[((jointsOffset + 1)<<2)>>2] = posY;
+                f32Array[((jointsOffset + 2)<<2)>>2] = posZ;
+                f32Array[((jointsOffset + 4)<<2)>>2] = orientX;
+                f32Array[((jointsOffset + 5)<<2)>>2] = orientY;
+                f32Array[((jointsOffset + 6)<<2)>>2] = orientZ;
+                f32Array[((jointsOffset + 7)<<2)>>2] = orientW;
+            }
+        }
 
         return {
             skin: skin,
-            skinSIMD: skinSIMD
+            skinSIMD: skinSIMD,
+            getFrameJoints: getFrameJoints
         }
     }
     
@@ -869,18 +1007,74 @@ define([
         }
     };
     
-    var a = 1;
+    Md5Mesh.prototype.setAnimation = function(anim) {
+        var i32Array = this.i32Array;
+        var f32Array = this.f32Array;
+        var offset = this.animationBase;
+        
+        const HIERARCHY_ELEMENTS = 3;
+        const BASEFRAME_ELEMENTS = 8;
+        const FRAME_ELEMENTS = 1;
+        
+        const HEADER = 6;
+        const HIERARCHY_BASE = 0;
+        const BASEFRAME_BASE = 2;
+        const FRAMES_BASE = 4;
+        
+        i32Array[offset++] = 0; // hierarchy base
+        i32Array[offset++] = anim.hierarchy.length;
+        i32Array[offset++] = 0; // baseFrame base
+        i32Array[offset++] = anim.baseFrame.length;
+        i32Array[offset++] = 0; // frames base
+        i32Array[offset++] = anim.frames.length;
+
+        i32Array[this.animationBase + HIERARCHY_BASE] = offset;
+        var i = 0;
+        for (i = 0; i < anim.hierarchy.length; ++i) {
+            i32Array[offset++] = anim.hierarchy[i].parent;
+            i32Array[offset++] = anim.hierarchy[i].flags;
+            i32Array[offset++] = anim.hierarchy[i].index;
+        }
+        i32Array[this.animationBase + BASEFRAME_BASE] = offset;
+        for (i = 0; i < anim.baseFrame.length; ++i) {
+            f32Array[offset++] = anim.baseFrame[i].pos[0];
+            f32Array[offset++] = anim.baseFrame[i].pos[1];
+            f32Array[offset++] = anim.baseFrame[i].pos[2];
+            f32Array[offset++] = 0;
+            f32Array[offset++] = anim.baseFrame[i].orient[0];
+            f32Array[offset++] = anim.baseFrame[i].orient[1];
+            f32Array[offset++] = anim.baseFrame[i].orient[2];
+            f32Array[offset++] = 0;
+        }
+        i32Array[this.animationBase + FRAMES_BASE] = offset;
+        var framesBase = offset;
+        for (i = 0; i < anim.frames.length; ++i) {
+            i32Array[offset++] = 0;
+            i32Array[offset++] = anim.frames[i].length;
+        }
+        for (i = 0; i < anim.frames.length; ++i) {
+            var frames = anim.frames[i];
+            i32Array[framesBase + i * 2] = offset;
+            for (var j = 0; j < frames.length; ++j) {
+                f32Array[offset++] = frames[j];       
+            }
+        }
+    }
 
     Md5Mesh.prototype.setAnimationFrame = function(gl, animation, frame) {
-        animation.getFrameJoints(frame, this.jointsArray);
+        this.asmGetFrameJoints(frame, this.animationBase, this.jointsArrayOffset);
         if (!useSIMD) {
             this.asmSkin();
         } else {
             this.asmSkinSIMD();
         }
+        this._bindBuffers(gl);
+    };
+    
+    Md5Mesh.prototype._bindBuffers = function(gl) {
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, this.vertArray, gl.STATIC_DRAW);
-    };
+    }
         
     Md5Mesh.prototype.draw =function(gl, shader) {
         if(!this.vertBuffer || !this.indexBuffer) { return; }
@@ -936,6 +1130,10 @@ define([
         this.hierarchy = null;
         this.baseFrame = null;
         this.frames = null;
+        this.buffer = new ArrayBuffer(1 * 1024 * 1024);
+        this.f32Array = new Float32Array(this.buffer);
+        this.i32Array = new Int32Array(this.buffer);
+        this.asmGetFrameJoints = _asmjsModule(window, null, this.buffer).getFrameJoints;
     };
         
     Md5Anim.prototype.load = function(url, callback) {
@@ -1000,8 +1198,6 @@ define([
             anim.frames.push(frame);
         });
     };
-
-    var second = 1;
         
     Md5Anim.prototype.getFrameJoints = function(frame, jointsArray) {
         frame = frame % this.frames.length;

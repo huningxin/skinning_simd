@@ -176,6 +176,8 @@ require([
             anim.load('models/md5/monsters/hellknight/idle2.md5anim', function(anim) {
                 var currentFrame = Math.round(Math.random() * 120);
                 var interval = 1000 / anim.frameRate;
+                
+                model.setAnimation(anim);
 
                 var handle = setInterval(function() {
                     currentFrame++;
