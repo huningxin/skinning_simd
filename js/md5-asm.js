@@ -344,7 +344,7 @@ define([
         f32Array[offset] = 1;
         f32Array[offset+1] = 2;
         f32Array[offset+2] = 3;
-        this.vertArray = new Float32Array(this.buffer, offset * 4);
+        this.vertArray = new Float32Array(this.buffer, offset * 4, numOfVerts * VERTEX_ELEMENTS);
         
         this.animationBase = offset + numOfVerts * VERTEX_ELEMENTS + 1;
     }
