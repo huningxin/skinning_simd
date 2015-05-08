@@ -347,7 +347,7 @@ define([
         this.animationBase = offset + numOfVerts * VERTEX_ELEMENTS + 1;
     };
     
-    Md5Mesh.prototype.setAnimation = function(anim) {
+    Md5Mesh.prototype._initializeArrayBufferForAnimation = function(anim) {
         var HEAP32 = new Int32Array(this.buffer);
         var HEAPF32 = new Float32Array(this.buffer);
         var offset = this.animationBase;
@@ -399,6 +399,10 @@ define([
                 HEAPF32[offset++] = frames[j];       
             }
         }
+    };
+
+    Md5Mesh.prototype.setAnimation = function(anim) {
+        this._initializeArrayBufferForAnimation(anim);
     };
         
     // Creates the model's gl buffers and populates them with the bind-pose mesh
