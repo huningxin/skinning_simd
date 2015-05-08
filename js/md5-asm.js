@@ -51,8 +51,6 @@ define([
         this.pos = vec3.create([0.0, 0.0, 0.0]);
         this.mesh_texture_loaded = 0;
         this.buffer = new ArrayBuffer(1 * 1024 * 1024);
-        this.f32Array = new Float32Array(this.buffer);
-        this.i32Array = new Int32Array(this.buffer);
         this.asmSkin = _asmjsModule(window, null, this.buffer).asmSkin;
         this.asmSkinSIMD = _asmjsModule(window, null, this.buffer).asmSkinSIMD;
         this.asmGetFrameJoints = _asmjsModule(window, null, this.buffer).asmGetFrameJoints;
@@ -272,82 +270,136 @@ define([
     };
 
     Md5Mesh.prototype._initializeArrayBuffer = function() {
-        var f32Array = this.f32Array;
-        var i32Array = this.i32Array;
+        var HEAPF32 = new Float32Array(this.buffer);
+        var HEAP32 = new Int32Array(this.buffer);
         var numOfVerts = 0;
         // layout: meshesBase, meshesLength, jointsBase, jointsLength, vertArrayBase
         const MESHES_BASE = 5;
-        i32Array[0] = MESHES_BASE; // meshes base
-        i32Array[1] = this.meshes.length;
-        i32Array[2] = 0; // joints base
-        i32Array[3] = this.joints.length;
-        i32Array[4] = 0; // vertArray base
+        HEAP32[0] = MESHES_BASE; // meshes base
+        HEAP32[1] = this.meshes.length;
+        HEAP32[2] = 0; // joints base
+        HEAP32[3] = this.joints.length;
+        HEAP32[4] = 0; // vertArray base
         // layout: base of each mesh
         var offset = MESHES_BASE + this.meshes.length; // bases of each mesh
         for(var i = 0; i < this.meshes.length; ++i) {
             var mesh = this.meshes[i];
             // set base of mesh
-            i32Array[MESHES_BASE + i] = offset;
+            HEAP32[MESHES_BASE + i] = offset;
             // layout: vertOffset, vertsBase, vertsLength, weightsBase, weightsLength
-            i32Array[offset++] = mesh.offset;
+            HEAP32[offset++] = mesh.offset;
             var vertsBaseOffset = offset++;
-            i32Array[offset++] = mesh.verts.length;
+            HEAP32[offset++] = mesh.verts.length;
             var weightsBaseOffset = offset++;
-            i32Array[offset++] = mesh.weights.length;
-            i32Array[vertsBaseOffset] = offset;
+            HEAP32[offset++] = mesh.weights.length;
+            HEAP32[vertsBaseOffset] = offset;
             for(var j = 0; j < mesh.verts.length; ++j) {
                 numOfVerts++;
                 var vert = mesh.verts[j];
-                f32Array[offset++] = vert.texCoord[0];
-                f32Array[offset++] = vert.texCoord[1];
-                i32Array[offset++] = vert.weight.index;
-                i32Array[offset++] = vert.weight.count;
+                HEAPF32[offset++] = vert.texCoord[0];
+                HEAPF32[offset++] = vert.texCoord[1];
+                HEAP32[offset++] = vert.weight.index;
+                HEAP32[offset++] = vert.weight.count;
             }
-            i32Array[weightsBaseOffset] = offset;
+            HEAP32[weightsBaseOffset] = offset;
             for (var j = 0; j < mesh.weights.length; ++j) {
                 var weight = mesh.weights[j];
-                i32Array[offset++] = weight.joint;
-                f32Array[offset++] = weight.bias;
-                f32Array[offset++] = weight.pos[0];
-                f32Array[offset++] = weight.pos[1];
-                f32Array[offset++] = weight.pos[2];
-                f32Array[offset++] = 0;
-                f32Array[offset++] = weight.normal[0];
-                f32Array[offset++] = weight.normal[1];
-                f32Array[offset++] = weight.normal[2];
-                f32Array[offset++] = 0;
-                f32Array[offset++] = weight.tangent[0];
-                f32Array[offset++] = weight.tangent[1];
-                f32Array[offset++] = weight.tangent[2];
-                f32Array[offset++] = 0;
+                HEAP32[offset++] = weight.joint;
+                HEAPF32[offset++] = weight.bias;
+                HEAPF32[offset++] = weight.pos[0];
+                HEAPF32[offset++] = weight.pos[1];
+                HEAPF32[offset++] = weight.pos[2];
+                HEAPF32[offset++] = 0;
+                HEAPF32[offset++] = weight.normal[0];
+                HEAPF32[offset++] = weight.normal[1];
+                HEAPF32[offset++] = weight.normal[2];
+                HEAPF32[offset++] = 0;
+                HEAPF32[offset++] = weight.tangent[0];
+                HEAPF32[offset++] = weight.tangent[1];
+                HEAPF32[offset++] = weight.tangent[2];
+                HEAPF32[offset++] = 0;
             }
         }
 
-        i32Array[2] = offset; // joints base;
+        HEAP32[2] = offset; // joints base;
         this.jointsArrayOffset = offset;
         this.jointsArray = new Float32Array(this.buffer, offset * 4);
 
-        i32Array[offset++] = this.joints.length;
+        HEAP32[offset++] = this.joints.length;
         for (var i = 0; i < this.joints.length; ++i) {
             var joint = this.joints[i];
-            f32Array[offset++] = joint.pos[0];
-            f32Array[offset++] = joint.pos[1];
-            f32Array[offset++] = joint.pos[2];
-            f32Array[offset++] = 0;
-            f32Array[offset++] = joint.orient[0];
-            f32Array[offset++] = joint.orient[1];
-            f32Array[offset++] = joint.orient[2];
-            f32Array[offset++] = joint.orient[3];
+            HEAPF32[offset++] = joint.pos[0];
+            HEAPF32[offset++] = joint.pos[1];
+            HEAPF32[offset++] = joint.pos[2];
+            HEAPF32[offset++] = 0;
+            HEAPF32[offset++] = joint.orient[0];
+            HEAPF32[offset++] = joint.orient[1];
+            HEAPF32[offset++] = joint.orient[2];
+            HEAPF32[offset++] = joint.orient[3];
         }
 
-        i32Array[4] = offset; // vertArray base;
-        f32Array[offset] = 1;
-        f32Array[offset+1] = 2;
-        f32Array[offset+2] = 3;
+        HEAP32[4] = offset; // vertArray base;
+        HEAPF32[offset] = 1;
+        HEAPF32[offset+1] = 2;
+        HEAPF32[offset+2] = 3;
         this.vertArray = new Float32Array(this.buffer, offset * 4, numOfVerts * VERTEX_ELEMENTS);
         
         this.animationBase = offset + numOfVerts * VERTEX_ELEMENTS + 1;
-    }
+    };
+    
+    Md5Mesh.prototype.setAnimation = function(anim) {
+        var HEAP32 = new Int32Array(this.buffer);
+        var HEAPF32 = new Float32Array(this.buffer);
+        var offset = this.animationBase;
+        
+        const HIERARCHY_ELEMENTS = 3;
+        const BASEFRAME_ELEMENTS = 8;
+        const FRAME_ELEMENTS = 1;
+        
+        const HEADER = 6;
+        const HIERARCHY_BASE = 0;
+        const BASEFRAME_BASE = 2;
+        const FRAMES_BASE = 4;
+        
+        HEAP32[offset++] = 0; // hierarchy base
+        HEAP32[offset++] = anim.hierarchy.length;
+        HEAP32[offset++] = 0; // baseFrame base
+        HEAP32[offset++] = anim.baseFrame.length;
+        HEAP32[offset++] = 0; // frames base
+        HEAP32[offset++] = anim.frames.length;
+
+        HEAP32[this.animationBase + HIERARCHY_BASE] = offset;
+        var i = 0;
+        for (i = 0; i < anim.hierarchy.length; ++i) {
+            HEAP32[offset++] = anim.hierarchy[i].parent;
+            HEAP32[offset++] = anim.hierarchy[i].flags;
+            HEAP32[offset++] = anim.hierarchy[i].index;
+        }
+        HEAP32[this.animationBase + BASEFRAME_BASE] = offset;
+        for (i = 0; i < anim.baseFrame.length; ++i) {
+            HEAPF32[offset++] = anim.baseFrame[i].pos[0];
+            HEAPF32[offset++] = anim.baseFrame[i].pos[1];
+            HEAPF32[offset++] = anim.baseFrame[i].pos[2];
+            HEAPF32[offset++] = 0;
+            HEAPF32[offset++] = anim.baseFrame[i].orient[0];
+            HEAPF32[offset++] = anim.baseFrame[i].orient[1];
+            HEAPF32[offset++] = anim.baseFrame[i].orient[2];
+            HEAPF32[offset++] = 0;
+        }
+        HEAP32[this.animationBase + FRAMES_BASE] = offset;
+        var framesBase = offset;
+        for (i = 0; i < anim.frames.length; ++i) {
+            HEAP32[offset++] = 0;
+            HEAP32[offset++] = anim.frames[i].length;
+        }
+        for (i = 0; i < anim.frames.length; ++i) {
+            var frames = anim.frames[i];
+            HEAP32[framesBase + i * 2] = offset;
+            for (var j = 0; j < frames.length; ++j) {
+                HEAPF32[offset++] = frames[j];       
+            }
+        }
+    };
         
     // Creates the model's gl buffers and populates them with the bind-pose mesh
     Md5Mesh.prototype._initializeBuffers = function(gl) {
@@ -384,8 +436,8 @@ define([
 
     function _asmjsModule (global, imp, buffer) {
         "use asm";
-        var f32Array = new global.Float32Array(buffer);
-        var i32Array = new global.Int32Array(buffer);
+        var HEAPF32 = new global.Float32Array(buffer);
+        var HEAP32 = new global.Int32Array(buffer);
         var u8Array = new global.Uint8Array(buffer);
         var imul = global.Math.imul;
         var toF = global.Math.fround;
@@ -431,17 +483,17 @@ define([
                 vertWeightsIndex = 0, weight = 0, joint = 0, offset = 0,
                 weightBias = toF(0), jointIndex = 0;
 
-            meshesBase = i32Array[0]|0; meshesLength = i32Array[1]|0;
-            jointsBase = i32Array[2]|0; jointsLength = i32Array[3]|0;
-            vertArrayBase = i32Array[4]|0;
+            meshesBase = HEAP32[0]|0; meshesLength = HEAP32[1]|0;
+            jointsBase = HEAP32[2]|0; jointsLength = HEAP32[3]|0;
+            vertArrayBase = HEAP32[4]|0;
             
             for(i = 0; (i|0) < (meshesLength|0); i = (i + 1)|0) {
-                meshBase = i32Array[((meshesBase + i)<<2)>>2]|0;
-                meshOffset = ((i32Array[((meshBase)<<2)>>2]|0) + (vertArrayBase|0))|0;
-                vertsBase = i32Array[((meshBase + 1)<<2)>>2]|0;
-                vertsLength = i32Array[((meshBase + 2)<<2)>>2]|0
-                weightsBase = i32Array[((meshBase + 3)<<2)>>2]|0;
-                weightsLength = i32Array[((meshBase + 4)<<2)>>2]|0;
+                meshBase = HEAP32[((meshesBase + i)<<2)>>2]|0;
+                meshOffset = ((HEAP32[((meshBase)<<2)>>2]|0) + (vertArrayBase|0))|0;
+                vertsBase = HEAP32[((meshBase + 1)<<2)>>2]|0;
+                vertsLength = HEAP32[((meshBase + 2)<<2)>>2]|0
+                weightsBase = HEAP32[((meshBase + 3)<<2)>>2]|0;
+                weightsLength = HEAP32[((meshBase + 4)<<2)>>2]|0;
 
                 // Calculate transformed vertices in the bind pose
                 for(j = 0; (j|0) < (vertsLength|0); j = (j + 1)|0) {
@@ -452,21 +504,21 @@ define([
                     nx = toF(0); ny = toF(0); nz = toF(0);
                     tx = toF(0); ty = toF(0); tz = toF(0);
 
-                    vertWeightsIndex = i32Array[((vert + 2)<<2)>>2]|0;
-                    vertWeightsCount = i32Array[((vert + 3)<<2)>>2]|0;
+                    vertWeightsIndex = HEAP32[((vert + 2)<<2)>>2]|0;
+                    vertWeightsCount = HEAP32[((vert + 3)<<2)>>2]|0;
                     for (k = 0; (k|0) < (vertWeightsCount|0); k = (k + 1)|0) {
                         weight = weightsBase + imul(k + vertWeightsIndex, MESH_WEIGHT_ELEMENTS)|0;
-                        jointIndex = i32Array[((weight + 0)<<2)>>2]|0;
+                        jointIndex = HEAP32[((weight + 0)<<2)>>2]|0;
                         joint = jointsBase + imul(jointIndex, JOINT_ELEMENTS)|0;
 
                         // Rotate position
-                        x = toF(f32Array[((weight + 2)<<2)>>2]);
-                        y = toF(f32Array[((weight + 3)<<2)>>2]);
-                        z = toF(f32Array[((weight + 4)<<2)>>2]);
-                        qx = toF(f32Array[((joint + 4)<<2)>>2]);
-                        qy = toF(f32Array[((joint + 5)<<2)>>2]);
-                        qz = toF(f32Array[((joint + 6)<<2)>>2]);
-                        qw = toF(f32Array[((joint + 7)<<2)>>2]);
+                        x = toF(HEAPF32[((weight + 2)<<2)>>2]);
+                        y = toF(HEAPF32[((weight + 3)<<2)>>2]);
+                        z = toF(HEAPF32[((weight + 4)<<2)>>2]);
+                        qx = toF(HEAPF32[((joint + 4)<<2)>>2]);
+                        qy = toF(HEAPF32[((joint + 5)<<2)>>2]);
+                        qz = toF(HEAPF32[((joint + 6)<<2)>>2]);
+                        qw = toF(HEAPF32[((joint + 7)<<2)>>2]);
 
                         // calculate quat * vec
                         ix = toF(toF(toF(toF(qw) * toF(x)) + toF(toF(qy) * toF(z))) - toF(toF(qz) * toF(y)));
@@ -480,15 +532,15 @@ define([
                         rz = toF(toF(toF(toF(iz) * toF(qw)) + toF(toF(iw) * toF(-qz))) + toF(toF(toF(ix) * toF(-qy)) - toF(toF(iy) * toF(-qx))));
 
                         // Translate position
-                        weightBias = toF(f32Array[((weight + 1)<<2)>>2]);
-                        vx = toF(toF(toF(toF(f32Array[((joint + 0)<<2)>>2]) + toF(rx)) * toF(weightBias)) + toF(vx));
-                        vy = toF(toF(toF(toF(f32Array[((joint + 1)<<2)>>2]) + toF(ry)) * toF(weightBias)) + toF(vy));
-                        vz = toF(toF(toF(toF(f32Array[((joint + 2)<<2)>>2]) + toF(rz)) * toF(weightBias)) + toF(vz));
+                        weightBias = toF(HEAPF32[((weight + 1)<<2)>>2]);
+                        vx = toF(toF(toF(toF(HEAPF32[((joint + 0)<<2)>>2]) + toF(rx)) * toF(weightBias)) + toF(vx));
+                        vy = toF(toF(toF(toF(HEAPF32[((joint + 1)<<2)>>2]) + toF(ry)) * toF(weightBias)) + toF(vy));
+                        vz = toF(toF(toF(toF(HEAPF32[((joint + 2)<<2)>>2]) + toF(rz)) * toF(weightBias)) + toF(vz));
 
                         // Rotate Normal
-                        x = toF(f32Array[((weight + 6)<<2)>>2]);
-                        y = toF(f32Array[((weight + 7)<<2)>>2]);
-                        z = toF(f32Array[((weight + 8)<<2)>>2]);
+                        x = toF(HEAPF32[((weight + 6)<<2)>>2]);
+                        y = toF(HEAPF32[((weight + 7)<<2)>>2]);
+                        z = toF(HEAPF32[((weight + 8)<<2)>>2]);
 
                         // calculate quat * vec
                         ix = toF(toF(toF(toF(qw) * toF(x)) + toF(toF(qy) * toF(z))) - toF(toF(qz) * toF(y)));
@@ -506,9 +558,9 @@ define([
                         nz = toF(toF(toF(rz) * toF(weightBias)) + toF(nz));
 
                         // Rotate Tangent
-                        x = toF(f32Array[((weight + 10)<<2)>>2]);
-                        y = toF(f32Array[((weight + 11)<<2)>>2]);
-                        z = toF(f32Array[((weight + 12)<<2)>>2]);
+                        x = toF(HEAPF32[((weight + 10)<<2)>>2]);
+                        y = toF(HEAPF32[((weight + 11)<<2)>>2]);
+                        z = toF(HEAPF32[((weight + 12)<<2)>>2]);
 
                         // calculate quat * vec
                         ix = toF(toF(toF(toF(qw) * toF(x)) + toF(toF(qy) * toF(z))) - toF(toF(qz) * toF(y)));
@@ -527,23 +579,23 @@ define([
                     }
 
                     // Position
-                    f32Array[((offset)<<2)>>2] = vx;
-                    f32Array[((offset+1)<<2)>>2] = vy;
-                    f32Array[((offset+2)<<2)>>2] = vz;
+                    HEAPF32[((offset)<<2)>>2] = vx;
+                    HEAPF32[((offset+1)<<2)>>2] = vy;
+                    HEAPF32[((offset+2)<<2)>>2] = vz;
 
                     // TexCoord
-                    f32Array[((offset+3)<<2)>>2] = f32Array[((vert + 0)<<2)>>2];
-                    f32Array[((offset+4)<<2)>>2] = f32Array[((vert + 1)<<2)>>2];
+                    HEAPF32[((offset+3)<<2)>>2] = HEAPF32[((vert + 0)<<2)>>2];
+                    HEAPF32[((offset+4)<<2)>>2] = HEAPF32[((vert + 1)<<2)>>2];
 
                     // Normal
-                    f32Array[((offset+5)<<2)>>2] = nx;
-                    f32Array[((offset+6)<<2)>>2] = ny;
-                    f32Array[((offset+7)<<2)>>2] = nz;
+                    HEAPF32[((offset+5)<<2)>>2] = nx;
+                    HEAPF32[((offset+6)<<2)>>2] = ny;
+                    HEAPF32[((offset+7)<<2)>>2] = nz;
 
                     // Tangent
-                    f32Array[((offset+8)<<2)>>2] = tx;
-                    f32Array[((offset+9)<<2)>>2] = ty;
-                    f32Array[((offset+10)<<2)>>2] = tz;
+                    HEAPF32[((offset+8)<<2)>>2] = tx;
+                    HEAPF32[((offset+9)<<2)>>2] = ty;
+                    HEAPF32[((offset+10)<<2)>>2] = tz;
                 }
             }
         }
@@ -568,17 +620,17 @@ define([
                 nx4 = SIMD_float32x4(0, 0, 0, 0), weightTangent = SIMD_float32x4(0, 0, 0, 0),
                 tempx4 = SIMD_float32x4(1, 1, 1, -1), tx4 = SIMD_float32x4(0, 0, 0, 0);
 
-            meshesBase = i32Array[0]|0; meshesLength = i32Array[1]|0;
-            jointsBase = i32Array[2]|0; jointsLength = i32Array[3]|0;
-            vertArrayBase = i32Array[4]|0;
+            meshesBase = HEAP32[0]|0; meshesLength = HEAP32[1]|0;
+            jointsBase = HEAP32[2]|0; jointsLength = HEAP32[3]|0;
+            vertArrayBase = HEAP32[4]|0;
             
             for(i = 0; (i|0) < (meshesLength|0); i = (i + 1)|0) {
-                meshBase = i32Array[((meshesBase + i)<<2)>>2]|0;
-                meshOffset = ((i32Array[((meshBase)<<2)>>2]|0) + (vertArrayBase|0))|0;
-                vertsBase = i32Array[((meshBase + 1)<<2)>>2]|0;
-                vertsLength = i32Array[((meshBase + 2)<<2)>>2]|0;
-                weightsBase = i32Array[((meshBase + 3)<<2)>>2]|0;
-                weightsLength = i32Array[((meshBase + 4)<<2)>>2]|0;
+                meshBase = HEAP32[((meshesBase + i)<<2)>>2]|0;
+                meshOffset = ((HEAP32[((meshBase)<<2)>>2]|0) + (vertArrayBase|0))|0;
+                vertsBase = HEAP32[((meshBase + 1)<<2)>>2]|0;
+                vertsLength = HEAP32[((meshBase + 2)<<2)>>2]|0;
+                weightsBase = HEAP32[((meshBase + 3)<<2)>>2]|0;
+                weightsLength = HEAP32[((meshBase + 4)<<2)>>2]|0;
                 
                 // Calculate transformed vertices in the bind pose
                 for(j = 0; (j|0) < (vertsLength|0); j = (j + 1)|0) {
@@ -589,11 +641,11 @@ define([
                     nx4 = SIMD_float32x4_splat(toF(0));
                     tx4 = SIMD_float32x4_splat(toF(0));
 
-                    vertWeightsIndex = i32Array[((vert + 2)<<2)>>2]|0;
-                    vertWeightsCount = i32Array[((vert + 3)<<2)>>2]|0;
+                    vertWeightsIndex = HEAP32[((vert + 2)<<2)>>2]|0;
+                    vertWeightsCount = HEAP32[((vert + 3)<<2)>>2]|0;
                     for (k = 0; (k|0) < (vertWeightsCount|0); k = (k + 1)|0) {
                         weight = weightsBase + imul(k + vertWeightsIndex, MESH_WEIGHT_ELEMENTS)|0;
-                        jointIndex = i32Array[((weight + 0)<<2)>>2]|0;
+                        jointIndex = HEAP32[((weight + 0)<<2)>>2]|0;
                         joint = jointsBase + imul(jointIndex, JOINT_ELEMENTS)|0;
 
                         // Rotate position
@@ -693,59 +745,59 @@ define([
                 jointsOffset = 0,
                 temp = toF(0.0);
             
-            hierarchyBase = i32Array[((animationBase + 0)<<2)>>2]|0;
-            hierarchyLength = i32Array[((animationBase + 1)<<2)>>2]|0;
-            baseFrameBase = i32Array[((animationBase + 2)<<2)>>2]|0;
-            baseFrameLength = i32Array[((animationBase + 3)<<2)>>2]|0;
-            framesArrayBase = i32Array[((animationBase + 4)<<2)>>2]|0;
-            framesArrayLength = i32Array[((animationBase + 5)<<2)>>2]|0;
+            hierarchyBase = HEAP32[((animationBase + 0)<<2)>>2]|0;
+            hierarchyLength = HEAP32[((animationBase + 1)<<2)>>2]|0;
+            baseFrameBase = HEAP32[((animationBase + 2)<<2)>>2]|0;
+            baseFrameLength = HEAP32[((animationBase + 3)<<2)>>2]|0;
+            framesArrayBase = HEAP32[((animationBase + 4)<<2)>>2]|0;
+            framesArrayLength = HEAP32[((animationBase + 5)<<2)>>2]|0;
             
             frame = ((frame|0) % (framesArrayLength|0))|0;
-            framesBase = i32Array[((framesArrayBase + (imul(frame, 2)|0)|0)<<2)>>2]|0;
+            framesBase = HEAP32[((framesArrayBase + (imul(frame, 2)|0)|0)<<2)>>2]|0;
             
             for (i = 0; (i|0) < (baseFrameLength|0); i = (i + 1)|0) {
                 baseJointOffset = ((baseFrameBase|0) + (imul(i, BASEFRAME_ELEMENTS)|0))|0;
-                posX = toF(f32Array[((baseJointOffset + 0)<<2)>>2]);
-                posY = toF(f32Array[((baseJointOffset + 1)<<2)>>2]);
-                posZ = toF(f32Array[((baseJointOffset + 2)<<2)>>2]);
-                orientX = toF(f32Array[((baseJointOffset + 4)<<2)>>2]);
-                orientY = toF(f32Array[((baseJointOffset + 5)<<2)>>2]);
-                orientZ = toF(f32Array[((baseJointOffset + 6)<<2)>>2]);
+                posX = toF(HEAPF32[((baseJointOffset + 0)<<2)>>2]);
+                posY = toF(HEAPF32[((baseJointOffset + 1)<<2)>>2]);
+                posZ = toF(HEAPF32[((baseJointOffset + 2)<<2)>>2]);
+                orientX = toF(HEAPF32[((baseJointOffset + 4)<<2)>>2]);
+                orientY = toF(HEAPF32[((baseJointOffset + 5)<<2)>>2]);
+                orientZ = toF(HEAPF32[((baseJointOffset + 6)<<2)>>2]);
                 
                 hierarchyOffset = ((hierarchyBase|0) + (imul(i, HIERARCHY_ELEMENTS)|0))|0;
-                parentIndex = i32Array[((hierarchyOffset + 0)<<2)>>2]|0;
-                flags = i32Array[((hierarchyOffset + 1)<<2)>>2]|0;
-                frameIndex = i32Array[((hierarchyOffset + 2)<<2)>>2]|0;
+                parentIndex = HEAP32[((hierarchyOffset + 0)<<2)>>2]|0;
+                flags = HEAP32[((hierarchyOffset + 1)<<2)>>2]|0;
+                frameIndex = HEAP32[((hierarchyOffset + 2)<<2)>>2]|0;
                 
                 j = 0|0;
                 
                 if (flags & 1) { // Translate X
-                    posX = toF(f32Array[((framesBase + frameIndex + j)<<2)>>2]);
+                    posX = toF(HEAPF32[((framesBase + frameIndex + j)<<2)>>2]);
                     j = (j + 1)|0;
                 }
     
                 if (flags & 2) { // Translate Y
-                    posY = toF(f32Array[((framesBase + frameIndex + j)<<2)>>2]);
+                    posY = toF(HEAPF32[((framesBase + frameIndex + j)<<2)>>2]);
                     j = (j + 1)|0;
                 }
     
                 if (flags & 4) { // Translate Z
-                    posZ = toF(f32Array[((framesBase + frameIndex + j)<<2)>>2]);
+                    posZ = toF(HEAPF32[((framesBase + frameIndex + j)<<2)>>2]);
                     j = (j + 1)|0;
                 }
     
                 if (flags & 8) { // Orient X
-                    orientX = toF(f32Array[((framesBase + frameIndex + j)<<2)>>2]);
+                    orientX = toF(HEAPF32[((framesBase + frameIndex + j)<<2)>>2]);
                     j = (j + 1)|0;
                 }
     
                 if (flags & 16) { // Orient Y
-                    orientY = toF(f32Array[((framesBase + frameIndex + j)<<2)>>2]);
+                    orientY = toF(HEAPF32[((framesBase + frameIndex + j)<<2)>>2]);
                     j = (j + 1)|0;
                 }
     
                 if (flags & 32) { // Orient Z
-                    orientZ = toF(f32Array[((framesBase + frameIndex + j)<<2)>>2]);
+                    orientZ = toF(HEAPF32[((framesBase + frameIndex + j)<<2)>>2]);
                     j = (j + 1)|0;
                 }
                 
@@ -754,13 +806,13 @@ define([
                     
                 if ((parentIndex|0) >= (0|0)) {
                     jointsOffset = ((jointsBase|0) + (imul(parentIndex, JOINT_ELEMENTS)|0))|0;
-                    parentPosX = toF(f32Array[((jointsOffset + 0)<<2)>>2]);
-                    parentPosY = toF(f32Array[((jointsOffset + 1)<<2)>>2]);
-                    parentPosZ = toF(f32Array[((jointsOffset + 2)<<2)>>2]);
-                    parentOrientX = toF(f32Array[((jointsOffset + 4)<<2)>>2]);
-                    parentOrientY = toF(f32Array[((jointsOffset + 5)<<2)>>2]);
-                    parentOrientZ = toF(f32Array[((jointsOffset + 6)<<2)>>2]);
-                    parentOrientW = toF(f32Array[((jointsOffset + 7)<<2)>>2]);
+                    parentPosX = toF(HEAPF32[((jointsOffset + 0)<<2)>>2]);
+                    parentPosY = toF(HEAPF32[((jointsOffset + 1)<<2)>>2]);
+                    parentPosZ = toF(HEAPF32[((jointsOffset + 2)<<2)>>2]);
+                    parentOrientX = toF(HEAPF32[((jointsOffset + 4)<<2)>>2]);
+                    parentOrientY = toF(HEAPF32[((jointsOffset + 5)<<2)>>2]);
+                    parentOrientZ = toF(HEAPF32[((jointsOffset + 6)<<2)>>2]);
+                    parentOrientW = toF(HEAPF32[((jointsOffset + 7)<<2)>>2]);
                     
                     ix = toF(toF(toF(toF(parentOrientW) * toF(posX)) + toF(toF(parentOrientY) * toF(posZ))) - toF(toF(parentOrientZ) * toF(posY)));
                     iy = toF(toF(toF(toF(parentOrientW) * toF(posY)) + toF(toF(parentOrientZ) * toF(posX))) - toF(toF(parentOrientX) * toF(posZ)));
@@ -786,13 +838,13 @@ define([
                 }
                 
                 jointsOffset = ((jointsBase|0) + (imul(i, JOINT_ELEMENTS)|0))|0;
-                f32Array[((jointsOffset + 0)<<2)>>2] = posX;
-                f32Array[((jointsOffset + 1)<<2)>>2] = posY;
-                f32Array[((jointsOffset + 2)<<2)>>2] = posZ;
-                f32Array[((jointsOffset + 4)<<2)>>2] = orientX;
-                f32Array[((jointsOffset + 5)<<2)>>2] = orientY;
-                f32Array[((jointsOffset + 6)<<2)>>2] = orientZ;
-                f32Array[((jointsOffset + 7)<<2)>>2] = orientW;
+                HEAPF32[((jointsOffset + 0)<<2)>>2] = posX;
+                HEAPF32[((jointsOffset + 1)<<2)>>2] = posY;
+                HEAPF32[((jointsOffset + 2)<<2)>>2] = posZ;
+                HEAPF32[((jointsOffset + 4)<<2)>>2] = orientX;
+                HEAPF32[((jointsOffset + 5)<<2)>>2] = orientY;
+                HEAPF32[((jointsOffset + 6)<<2)>>2] = orientZ;
+                HEAPF32[((jointsOffset + 7)<<2)>>2] = orientW;
             }
         }
 
@@ -800,60 +852,6 @@ define([
             asmSkin: asmSkin,
             asmSkinSIMD: asmSkinSIMD,
             asmGetFrameJoints: asmGetFrameJoints
-        }
-    }
-    
-    Md5Mesh.prototype.setAnimation = function(anim) {
-        var i32Array = this.i32Array;
-        var f32Array = this.f32Array;
-        var offset = this.animationBase;
-        
-        const HIERARCHY_ELEMENTS = 3;
-        const BASEFRAME_ELEMENTS = 8;
-        const FRAME_ELEMENTS = 1;
-        
-        const HEADER = 6;
-        const HIERARCHY_BASE = 0;
-        const BASEFRAME_BASE = 2;
-        const FRAMES_BASE = 4;
-        
-        i32Array[offset++] = 0; // hierarchy base
-        i32Array[offset++] = anim.hierarchy.length;
-        i32Array[offset++] = 0; // baseFrame base
-        i32Array[offset++] = anim.baseFrame.length;
-        i32Array[offset++] = 0; // frames base
-        i32Array[offset++] = anim.frames.length;
-
-        i32Array[this.animationBase + HIERARCHY_BASE] = offset;
-        var i = 0;
-        for (i = 0; i < anim.hierarchy.length; ++i) {
-            i32Array[offset++] = anim.hierarchy[i].parent;
-            i32Array[offset++] = anim.hierarchy[i].flags;
-            i32Array[offset++] = anim.hierarchy[i].index;
-        }
-        i32Array[this.animationBase + BASEFRAME_BASE] = offset;
-        for (i = 0; i < anim.baseFrame.length; ++i) {
-            f32Array[offset++] = anim.baseFrame[i].pos[0];
-            f32Array[offset++] = anim.baseFrame[i].pos[1];
-            f32Array[offset++] = anim.baseFrame[i].pos[2];
-            f32Array[offset++] = 0;
-            f32Array[offset++] = anim.baseFrame[i].orient[0];
-            f32Array[offset++] = anim.baseFrame[i].orient[1];
-            f32Array[offset++] = anim.baseFrame[i].orient[2];
-            f32Array[offset++] = 0;
-        }
-        i32Array[this.animationBase + FRAMES_BASE] = offset;
-        var framesBase = offset;
-        for (i = 0; i < anim.frames.length; ++i) {
-            i32Array[offset++] = 0;
-            i32Array[offset++] = anim.frames[i].length;
-        }
-        for (i = 0; i < anim.frames.length; ++i) {
-            var frames = anim.frames[i];
-            i32Array[framesBase + i * 2] = offset;
-            for (var j = 0; j < frames.length; ++j) {
-                f32Array[offset++] = frames[j];       
-            }
         }
     }
 
@@ -926,10 +924,6 @@ define([
         this.hierarchy = null;
         this.baseFrame = null;
         this.frames = null;
-        this.buffer = new ArrayBuffer(1 * 1024 * 1024);
-        this.f32Array = new Float32Array(this.buffer);
-        this.i32Array = new Int32Array(this.buffer);
-        this.asmGetFrameJoints = _asmjsModule(window, null, this.buffer).asmGetFrameJoints;
     };
         
     Md5Anim.prototype.load = function(url, callback) {
