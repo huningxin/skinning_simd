@@ -53,9 +53,9 @@ define([
         this.buffer = new ArrayBuffer(1 * 1024 * 1024);
         this.f32Array = new Float32Array(this.buffer);
         this.i32Array = new Int32Array(this.buffer);
-        this.asmSkin = _asmjsModule(window, null, this.buffer).skin;
-        this.asmSkinSIMD = _asmjsModule(window, null, this.buffer).skinSIMD;
-        this.asmGetFrameJoints = _asmjsModule(window, null, this.buffer).getFrameJoints;
+        this.asmSkin = _asmjsModule(window, null, this.buffer).asmSkin;
+        this.asmSkinSIMD = _asmjsModule(window, null, this.buffer).asmSkinSIMD;
+        this.asmGetFrameJoints = _asmjsModule(window, null, this.buffer).asmGetFrameJoints;
         this.jointsArray = null;
         this.jointsArrayOffset = 0;
         this.animationBase = 0;
@@ -412,7 +412,7 @@ define([
         const BASEFRAME_ELEMENTS = 8; // pos (f4), orient (f4)
         const FRAME_ELEMENTS = 1; // value (f)
 
-        function skin() {
+        function asmSkin() {
             var i = 0, j = 0, k = 0;
             var vx = toF(0), vy = toF(0), vz = toF(0),
                 nx = toF(0), ny = toF(0), nz = toF(0),
@@ -548,7 +548,7 @@ define([
             }
         }
 
-        function skinSIMD() {
+        function asmSkinSIMD() {
             // TODO(nhu): uncomment once scalar version is done
             /*
             var i = 0, j = 0, k = 0;
@@ -675,7 +675,7 @@ define([
             */
         }
         
-        function getFrameJoints(frame, animationBase, jointsBase) {
+        function asmGetFrameJoints(frame, animationBase, jointsBase) {
             frame = frame|0;
             animationBase = animationBase|0;
             jointsBase = jointsBase|0;
@@ -797,9 +797,9 @@ define([
         }
 
         return {
-            skin: skin,
-            skinSIMD: skinSIMD,
-            getFrameJoints: getFrameJoints
+            asmSkin: asmSkin,
+            asmSkinSIMD: asmSkinSIMD,
+            asmGetFrameJoints: asmGetFrameJoints
         }
     }
     
@@ -929,7 +929,7 @@ define([
         this.buffer = new ArrayBuffer(1 * 1024 * 1024);
         this.f32Array = new Float32Array(this.buffer);
         this.i32Array = new Int32Array(this.buffer);
-        this.asmGetFrameJoints = _asmjsModule(window, null, this.buffer).getFrameJoints;
+        this.asmGetFrameJoints = _asmjsModule(window, null, this.buffer).asmGetFrameJoints;
     };
         
     Md5Anim.prototype.load = function(url, callback) {
@@ -993,84 +993,6 @@ define([
 
             anim.frames.push(frame);
         });
-    };
-        
-    Md5Anim.prototype.getFrameJoints = function(frame, jointsArray) {
-        frame = frame % this.frames.length;
-    
-        var frameData = this.frames[frame]; 
-        var joints = new Array();
-        var jointsOffset = 0;
-
-        for (var i = 0; i < this.baseFrame.length; ++i) {
-            var baseJoint = this.baseFrame[i];
-            var offset = this.hierarchy[i].index;
-            var flags = this.hierarchy[i].flags;
-
-            var aPos = [baseJoint.pos[0], baseJoint.pos[1], baseJoint.pos[2]];
-            var aOrient = [baseJoint.orient[0], baseJoint.orient[1], baseJoint.orient[2], 0];
-
-            var j = 0;
-
-            if (flags & 1) { // Translate X
-                aPos[0] = frameData[offset + j];
-                ++j;
-            }
-
-            if (flags & 2) { // Translate Y
-                aPos[1] = frameData[offset + j];
-                ++j;
-            }
-
-            if (flags & 4) { // Translate Z
-                aPos[2] = frameData[offset + j];
-                ++j;
-            }
-
-            if (flags & 8) { // Orient X
-                aOrient[0] = frameData[offset + j];
-                ++j;
-            }
-
-            if (flags & 16) { // Orient Y
-                aOrient[1] = frameData[offset + j];
-                ++j;
-            }
-
-            if (flags & 32) { // Orient Z
-                aOrient[2] = frameData[offset + j];
-                ++j;
-            }
-
-            // Recompute W value
-            quat4.calculateW(aOrient);
-
-            // Multiply against parent 
-            //(assumes parents always have a lower index than their children)
-            var parentIndex = this.hierarchy[i].parent;
-
-            if(parentIndex >= 0) {
-                var parentJoint = joints[parentIndex];
-
-                quat4.multiplyVec3(parentJoint.orient, aPos);
-                vec3.add(aPos, parentJoint.pos);
-                quat4.multiply(parentJoint.orient, aOrient, aOrient);
-            }
-
-            joints.push({pos: aPos, orient: aOrient});
-        }
-
-        for (var i = 0; i < joints.length; ++i) {
-            var joint = joints[i];
-            jointsArray[jointsOffset++] = joint.pos[0];
-            jointsArray[jointsOffset++] = joint.pos[1];
-            jointsArray[jointsOffset++] = joint.pos[2];
-            jointsArray[jointsOffset++] = 0;
-            jointsArray[jointsOffset++] = joint.orient[0];
-            jointsArray[jointsOffset++] = joint.orient[1];
-            jointsArray[jointsOffset++] = joint.orient[2];
-            jointsArray[jointsOffset++] = joint.orient[3];
-        }
     };
 
     return {
