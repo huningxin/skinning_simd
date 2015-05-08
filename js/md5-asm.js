@@ -367,11 +367,6 @@ define([
 
         this._initializeArrayBuffer();
 
-        // Fill the vertex buffer
-        if (!useSIMD)
-            //this._skin();
-        //else
-        //    this._skinSIMD();
         this.vertBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, this.vertArray, gl.STATIC_DRAW);
@@ -394,6 +389,10 @@ define([
         var u8Array = new global.Uint8Array(buffer);
         var imul = global.Math.imul;
         var toF = global.Math.fround;
+        var sqrt = global.Math.sqrt;
+        var abs = global.Math.abs;
+        // TODO(ningxin): uncommet to once scalar version is done
+        /*
         var SIMD_float32x4 = global.SIMD.float32x4;
         var SIMD_float32x4_load = SIMD_float32x4.load;
         var SIMD_float32x4_store = SIMD_float32x4.store;
@@ -403,9 +402,7 @@ define([
         var SIMD_float32x4_swizzle = SIMD_float32x4.swizzle;
         var SIMD_float32x4_loadX = SIMD_float32x4.loadX;
         var SIMD_float32x4_splat = SIMD_float32x4.splat;
-        var sqrt = global.Math.sqrt;
-        var abs = global.Math.abs;
-        
+        */
         const VERTEX_ELEMENTS = 11; // 3 Pos, 2 UV, 3 Norm, 3 Tangent
         const MESH_VERTEX_ELEMENTS = 4; // texCoord(f2), weight index (i1), weight count (i1)
         const MESH_WEIGHT_ELEMENTS = 14; // joint (i1), bias (f1), pos (f4), normal (f4), tangent (f4)
@@ -552,6 +549,8 @@ define([
         }
 
         function skinSIMD() {
+            // TODO(nhu): uncomment once scalar version is done
+            /*
             var i = 0, j = 0, k = 0;
             var meshesBase = 0, meshesLength = 0,
                 jointsBase = 0, jointsLength = 0,
@@ -560,6 +559,7 @@ define([
             var meshBase = 0, meshOffset = 0, vertsBase = 0, vertsLength = 0,
                 weightsBase = 0, weightsLength = 0, vert = 0, vertWeightsCount = 0,
                 vertWeightsIndex = 0, weight = 0, joint = 0, offset = 0, jointIndex = 0;
+
                 
             var rotatedPos = SIMD_float32x4(0, 0, 0, 0), jointOrient = SIMD_float32x4(0, 0, 0, 0),
                 weightPos = SIMD_float32x4(0, 0, 0, 0), ix4 = SIMD_float32x4(0, 0, 0, 0),
@@ -672,6 +672,7 @@ define([
                     SIMD_float32x4_store(u8Array, (offset + 8)<<2, tx4);
                 }
             }
+            */
         }
         
         function getFrameJoints(frame, animationBase, jointsBase) {
@@ -748,8 +749,6 @@ define([
                     j = (j + 1)|0;
                 }
                 
-                //orientW = toF(-toF(sqrt(toF(abs(toF(toF(toF(1.0) - toF(toF(orientX)*toF(orientX))) -
-                //    toF(toF(toF(orientY)*toF(orientY)) - toF(toF(orientZ)*toF(orientZ)))))))));
                 temp = toF(toF(toF(toF(1.0) - toF(orientX*orientX)) - toF(orientY*orientY)) - toF(orientZ*orientZ));
                 orientW = toF(-sqrt(abs(+temp)));
                     
@@ -803,209 +802,6 @@ define([
             getFrameJoints: getFrameJoints
         }
     }
-    
-    // Skins the vertexArray with the given joint set
-    // Passing null to joints results in the bind pose
-    var first = 1;
-    Md5Mesh.prototype._skin = function(joints, vertArray, arrayOffset) {
-        if(!joints) { joints = this.joints; }
-        if(!vertArray) { vertArray = this.vertArray }
-        if(!arrayOffset) { arrayOffset = 0; }
-
-        var rotatedPos = [0, 0, 0];
-
-        var vx, vy, vz;
-        var nx, ny, nz;
-        var tx, ty, tz;
-        
-        var meshes = this.meshes;
-        
-        for(var i = 0; i < meshes.length; ++i) {
-            var mesh = meshes[i];
-            var meshOffset = mesh.offset + arrayOffset;
-
-            // Calculate transformed vertices in the bind pose
-            for(var j = 0; j < mesh.verts.length; ++j) {
-                var offset = (j * VERTEX_ELEMENTS) + meshOffset;
-                var vert = mesh.verts[j];
-
-                vx = 0; vy = 0; vz = 0;
-                nx = 0; ny = 0; nz = 0;
-                tx = 0; ty = 0; tz = 0;
-
-                for (var k = 0; k < vert.weight.count; ++k) {
-                    var weight = mesh.weights[vert.weight.index + k];
-                    var joint = joints[weight.joint];
-
-                    if (first|0 == 1|0) {
-                        console.log('weight.pos: ', weight.pos);
-                        console.log('weight.joint: ', weight.joint);
-                        console.log('joint.orient: ', joint.orient);
-                    }
-
-                    // Rotate position
-                    quat4.multiplyVec3(joint.orient, weight.pos, rotatedPos);
-                    if (first|0 == 1|0) {
-                        console.log('rotatedPos: ', rotatedPos);
-                    }
-
-                    // Translate position
-                    vx += (joint.pos[0] + rotatedPos[0]) * weight.bias;
-                    vy += (joint.pos[1] + rotatedPos[1]) * weight.bias;
-                    vz += (joint.pos[2] + rotatedPos[2]) * weight.bias;
-
-                    // Rotate Normal
-                    quat4.multiplyVec3(joint.orient, weight.normal, rotatedPos);
-                    nx += rotatedPos[0] * weight.bias;
-                    ny += rotatedPos[1] * weight.bias;
-                    nz += rotatedPos[2] * weight.bias;
-
-                    // Rotate Tangent
-                    quat4.multiplyVec3(joint.orient, weight.tangent, rotatedPos);
-                    tx += rotatedPos[0] * weight.bias;
-                    ty += rotatedPos[1] * weight.bias;
-                    tz += rotatedPos[2] * weight.bias;
-                }
-
-                if (first|0 == 1|0) {
-                    console.log('offset: ', offset);
-                    console.log('store: ', vx, vy, vz);
-                    console.log('store: ', nx, ny, nz);
-                    console.log('store: ', tx, ty, tz);
-                }
-                // Position
-                vertArray[offset] = vx;
-                vertArray[offset+1] = vy;
-                vertArray[offset+2] = vz;
-
-                if (first|0 == 1|0) {
-                    console.log('vertArray: ', vertArray[offset], vertArray[offset+1], vertArray[offset+2]);
-                    first = 0;
-                }
-
-                // TexCoord
-                vertArray[offset+3] = vert.texCoord[0];
-                vertArray[offset+4] = vert.texCoord[1];
-
-                // Normal
-                vertArray[offset+5] = nx;
-                vertArray[offset+6] = ny;
-                vertArray[offset+7] = nz;
-
-                // Tangent
-                vertArray[offset+8] = tx;
-                vertArray[offset+9] = ty;
-                vertArray[offset+10] = tz;
-            }
-        }
-    };
-
-    Md5Mesh.prototype._skinSIMD = function(jointsData, vertArray, arrayOffset) {
-        // joints holds pos4f and orient4f
-        if(!jointsData) { jointsData = this.jointsData; }
-        if(!vertArray) { vertArray = this.vertArray }
-        if(!arrayOffset) { arrayOffset = 0; }
-
-        var rotatedPos = SIMD.float32x4.splat(0);
-        var tempx4 = SIMD.float32x4(1, 1, 1, -1);
-        
-        var meshes = this.meshes;
-        
-        for(var i = 0; i < meshes.length; ++i) {
-            var mesh = meshes[i];
-            var meshOffset = mesh.offset + arrayOffset;
-
-            // Calculate transformed vertices in the bind pose
-            for(var j = 0; j < mesh.verts.length; ++j) {
-                var offset = (j * VERTEX_ELEMENTS) + meshOffset;
-                var vert = mesh.verts[j];
-
-                var vx4 = SIMD.float32x4.splat(0);
-                var nx4 = SIMD.float32x4.splat(0);
-                var tx4 = SIMD.float32x4.splat(0);
-
-                for (var k = 0; k < vert.weight.count; ++k) {
-                    var weight = mesh.weights[vert.weight.index + k];
-                    var weigthsData = mesh.weightsData;
-                    var weightsOffset = (vert.weight.index + k) * 13;
-
-                    // Rotate position
-                    var jointOrient = SIMD.float32x4.load(jointsData, weight.joint * 8 + 4);
-                    var weightPos = SIMD.float32x4.load(weigthsData, weightsOffset + 1);
-                    var ix4 = SIMD.float32x4.sub(
-                        SIMD.float32x4.add(
-                            SIMD.float32x4.mul(SIMD.float32x4.mul(SIMD.float32x4.swizzle(jointOrient, 3, 3, 3, 0), tempx4),
-                                               SIMD.float32x4.swizzle(weightPos, 0, 1, 2, 0)),
-                            SIMD.float32x4.mul(SIMD.float32x4.mul(SIMD.float32x4.swizzle(jointOrient, 1, 2, 0, 1), tempx4),
-                                               SIMD.float32x4.swizzle(weightPos, 2, 0, 1, 1))),
-                        SIMD.float32x4.mul(SIMD.float32x4.swizzle(jointOrient, 2, 0, 1, 2),
-                                           SIMD.float32x4.swizzle(weightPos, 1, 2, 0, 2)));
-
-                    var rotatedPos = SIMD.float32x4.add(
-                        SIMD.float32x4.sub(SIMD.float32x4.mul(ix4, SIMD.float32x4.swizzle(jointOrient, 3, 3, 3, 0)),
-                                           SIMD.float32x4.mul(SIMD.float32x4.swizzle(ix4, 3, 3, 3, 0), jointOrient)),
-                        SIMD.float32x4.sub(SIMD.float32x4.mul(SIMD.float32x4.swizzle(ix4, 2, 0, 1, 0), SIMD.float32x4.swizzle(jointOrient, 1, 2, 0, 0)),
-                                           SIMD.float32x4.mul(SIMD.float32x4.swizzle(ix4, 1, 2, 0, 0), SIMD.float32x4.swizzle(jointOrient, 2, 0, 1, 0))));
-
-                    var jointPos = SIMD.float32x4.load(jointsData, weight.joint * 8);
-                    var weightBias = SIMD.float32x4.swizzle(SIMD.float32x4.loadX(weigthsData, weightsOffset), 0, 0, 0, 0);
-
-                    // Translate position
-                    vx4 = SIMD.float32x4.add(vx4, SIMD.float32x4.mul(SIMD.float32x4.add(jointPos, rotatedPos), weightBias));
-
-                    // Rotate Normal
-                    var weightNormal = SIMD.float32x4.load(weigthsData, weightsOffset + 5);
-                    ix4 = SIMD.float32x4.sub(
-                        SIMD.float32x4.add(
-                            SIMD.float32x4.mul(SIMD.float32x4.mul(SIMD.float32x4.swizzle(jointOrient, 3, 3, 3, 0), tempx4),
-                                               SIMD.float32x4.swizzle(weightNormal, 0, 1, 2, 0)),
-                            SIMD.float32x4.mul(SIMD.float32x4.mul(SIMD.float32x4.swizzle(jointOrient, 1, 2, 0, 1), tempx4),
-                                               SIMD.float32x4.swizzle(weightNormal, 2, 0, 1, 1))),
-                        SIMD.float32x4.mul(SIMD.float32x4.swizzle(jointOrient, 2, 0, 1, 2),
-                                           SIMD.float32x4.swizzle(weightNormal, 1, 2, 0, 2)));
-
-                    rotatedPos = SIMD.float32x4.add(
-                        SIMD.float32x4.sub(SIMD.float32x4.mul(ix4, SIMD.float32x4.swizzle(jointOrient, 3, 3, 3, 0)),
-                                           SIMD.float32x4.mul(SIMD.float32x4.swizzle(ix4, 3, 3, 3, 0), jointOrient)),
-                        SIMD.float32x4.sub(SIMD.float32x4.mul(SIMD.float32x4.swizzle(ix4, 2, 0, 1, 0), SIMD.float32x4.swizzle(jointOrient, 1, 2, 0, 0)),
-                                           SIMD.float32x4.mul(SIMD.float32x4.swizzle(ix4, 1, 2, 0, 0), SIMD.float32x4.swizzle(jointOrient, 2, 0, 1, 0))));
-
-                    nx4 = SIMD.float32x4.add(nx4, SIMD.float32x4.mul(rotatedPos, weightBias))
-
-                    // Rotate Tangent
-                    var weightTangent = SIMD.float32x4.load(weigthsData, weightsOffset + 9);
-                    ix4 = SIMD.float32x4.sub(
-                        SIMD.float32x4.add(
-                            SIMD.float32x4.mul(SIMD.float32x4.mul(SIMD.float32x4.swizzle(jointOrient, 3, 3, 3, 0), tempx4),
-                                               SIMD.float32x4.swizzle(weightTangent, 0, 1, 2, 0)),
-                            SIMD.float32x4.mul(SIMD.float32x4.mul(SIMD.float32x4.swizzle(jointOrient, 1, 2, 0, 1), tempx4),
-                                               SIMD.float32x4.swizzle(weightTangent, 2, 0, 1, 1))),
-                        SIMD.float32x4.mul(SIMD.float32x4.swizzle(jointOrient, 2, 0, 1, 2),
-                                           SIMD.float32x4.swizzle(weightTangent, 1, 2, 0, 2)));
-
-                    rotatedPos = SIMD.float32x4.add(
-                        SIMD.float32x4.sub(SIMD.float32x4.mul(ix4, SIMD.float32x4.swizzle(jointOrient, 3, 3, 3, 0)),
-                                           SIMD.float32x4.mul(SIMD.float32x4.swizzle(ix4, 3, 3, 3, 0), jointOrient)),
-                        SIMD.float32x4.sub(SIMD.float32x4.mul(SIMD.float32x4.swizzle(ix4, 2, 0, 1, 0), SIMD.float32x4.swizzle(jointOrient, 1, 2, 0, 0)),
-                                           SIMD.float32x4.mul(SIMD.float32x4.swizzle(ix4, 1, 2, 0, 0), SIMD.float32x4.swizzle(jointOrient, 2, 0, 1, 0))));
-
-                    tx4 = SIMD.float32x4.add(tx4, SIMD.float32x4.mul(rotatedPos, weightBias))
-                }
-
-                // Position
-                SIMD.float32x4.store(vertArray, offset, vx4);
-
-                // TexCoord
-                SIMD.float32x4.store(vertArray, offset + 3, SIMD.float32x4.load(vert.texCoord, 0));
-
-                // Normal
-                SIMD.float32x4.store(vertArray, offset + 5, nx4);
-
-                // Tangent
-                SIMD.float32x4.store(vertArray, offset + 8, tx4);
-            }
-        }
-    };
     
     Md5Mesh.prototype.setAnimation = function(anim) {
         var i32Array = this.i32Array;
