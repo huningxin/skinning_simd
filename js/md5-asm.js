@@ -570,7 +570,6 @@ define([
         var SIMD_float32x4_add = SIMD_float32x4.add;
         var SIMD_float32x4_sub = SIMD_float32x4.sub;
         var SIMD_float32x4_swizzle = SIMD_float32x4.swizzle;
-        var SIMD_float32x4_loadX = SIMD_float32x4.loadX;
         var SIMD_float32x4_splat = SIMD_float32x4.splat;
         var VERTEX_ELEMENTS = 11; // 3 Pos, 2 UV, 3 Norm, 3 Tangent
         var VERTEX_STRIDE = 44;
@@ -1016,7 +1015,7 @@ define([
                                                SIMD_float32x4_mul(SIMD_float32x4_swizzle(ix4, 1, 2, 0, 0), SIMD_float32x4_swizzle(jointOrient, 2, 0, 1, 0))));
     
                         jointPos = SIMD_float32x4_load(HEAPU8, (jointPtr + f_JOINT_POS_0_OFFSET)|0);
-                        weightBias = SIMD_float32x4_swizzle(SIMD_float32x4_loadX(HEAPU8, (weightPtr + f_WEIGHT_BIAS_OFFSET)|0), 0, 0, 0, 0);
+                        weightBias = SIMD_float32x4_swizzle(SIMD_float32x4_load(HEAPU8, (weightPtr + f_WEIGHT_BIAS_OFFSET)|0), 0, 0, 0, 0);
     
                         // Translate position
                         vx4 = SIMD_float32x4_add(vx4, SIMD_float32x4_mul(SIMD_float32x4_add(jointPos, rotatedPos), weightBias));
