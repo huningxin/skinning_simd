@@ -692,12 +692,12 @@ define([
                 framesArrayLength = 0, framesArrayPtr = 0, framesStructPtr = 0, framesPtr = 0,
                 baseJointPtr = 0, hierarchyPtr = 0, frameIndex = 0, parentIndex = 0,
                 flags = 0,
-                posX = toF(0.0), posY = toF(0.0), posZ = toF(0.0), parentPosX = toF(0.0), parentPosY = toF(0.0), parentPosZ = toF(0.0),
-                orientX = toF(0.0), orientY = toF(0.0), orientZ = toF(0.0), orientW = toF(0.0),
-                parentOrientX = toF(0.0), parentOrientY = toF(0.0), parentOrientZ = toF(0.0), parentOrientW = toF(0.0),
-                ix = toF(0.0), iy = toF(0.0), iz = toF(0.0), iw = toF(0.0),
+                posX = 0.0, posY = 0.0, posZ = 0.0, parentPosX = 0.0, parentPosY = 0.0, parentPosZ = 0.0,
+                orientX = 0.0, orientY = 0.0, orientZ = 0.0, orientW = 0.0,
+                parentOrientX = 0.0, parentOrientY = 0.0, parentOrientZ = 0.0, parentOrientW = 0.0,
+                ix = 0.0, iy = 0.0, iz = 0.0, iw = 0.0,
                 parentJointPtr = 0, jointPtr = 0,
-                temp = toF(0.0);
+                temp = 0.0;
             
             animationPtr = HEAP32[(HEAP_BASE + i_ANIMATION_STRUCT_PTR_OFFSET)>>2]|0;
             modelPtr = HEAP32[(HEAP_BASE + i_MODEL_STRUCT_PTR_OFFSET)>>2]|0;
@@ -716,12 +716,12 @@ define([
             
             for (i = 0; (i|0) < (baseFrameLength|0); i = (i + 1)|0) {
                 baseJointPtr = (baseFramePtr + (imul(i, BASEFRAME_STRUCT_SIZE)|0))|0;
-                posX = toF(HEAPF32[(baseJointPtr + f_BASEFRAME_POS_0_OFFSET)>>2]);
-                posY = toF(HEAPF32[(baseJointPtr + f_BASEFRAME_POS_1_OFFSET)>>2]);
-                posZ = toF(HEAPF32[(baseJointPtr + f_BASEFRAME_POS_2_OFFSET)>>2]);
-                orientX = toF(HEAPF32[(baseJointPtr + f_BASEFRAME_ORIENT_0_OFFSET)>>2]);
-                orientY = toF(HEAPF32[(baseJointPtr + f_BASEFRAME_ORIENT_1_OFFSET)>>2]);
-                orientZ = toF(HEAPF32[(baseJointPtr + f_BASEFRAME_ORIENT_2_OFFSET)>>2]);
+                posX = +(HEAPF32[(baseJointPtr + f_BASEFRAME_POS_0_OFFSET)>>2]);
+                posY = +(HEAPF32[(baseJointPtr + f_BASEFRAME_POS_1_OFFSET)>>2]);
+                posZ = +(HEAPF32[(baseJointPtr + f_BASEFRAME_POS_2_OFFSET)>>2]);
+                orientX = +(HEAPF32[(baseJointPtr + f_BASEFRAME_ORIENT_0_OFFSET)>>2]);
+                orientY = +(HEAPF32[(baseJointPtr + f_BASEFRAME_ORIENT_1_OFFSET)>>2]);
+                orientZ = +(HEAPF32[(baseJointPtr + f_BASEFRAME_ORIENT_2_OFFSET)>>2]);
                 
                 hierarchyPtr = (hierarchyArrayPtr + (imul(i, HIERARCHY_STRUCT_SIZE)|0))|0;
                 parentIndex = HEAP32[(hierarchyPtr + i_HIERARCHY_PARENT_OFFSET)>>2]|0;
@@ -731,65 +731,65 @@ define([
                 j = 0|0;
                 
                 if (flags & 1) { // Translate X
-                    posX = toF(HEAPF32[(framesPtr + (imul(frameIndex, FRAME_STRUCT_SIZE)|0) + j)>>2]);
+                    posX = +(HEAPF32[(framesPtr + (imul(frameIndex, FRAME_STRUCT_SIZE)|0) + j)>>2]);
                     j = (j + FRAME_STRUCT_SIZE)|0;
                 }
     
                 if (flags & 2) { // Translate Y
-                    posY = toF(HEAPF32[(framesPtr + (imul(frameIndex, FRAME_STRUCT_SIZE)|0) + j)>>2]);
+                    posY = +(HEAPF32[(framesPtr + (imul(frameIndex, FRAME_STRUCT_SIZE)|0) + j)>>2]);
                     j = (j + FRAME_STRUCT_SIZE)|0;
                 }
     
                 if (flags & 4) { // Translate Z
-                    posZ = toF(HEAPF32[(framesPtr + (imul(frameIndex, FRAME_STRUCT_SIZE)|0) + j)>>2]);
+                    posZ = +(HEAPF32[(framesPtr + (imul(frameIndex, FRAME_STRUCT_SIZE)|0) + j)>>2]);
                     j = (j + FRAME_STRUCT_SIZE)|0;
                 }
     
                 if (flags & 8) { // Orient X
-                    orientX = toF(HEAPF32[(framesPtr + (imul(frameIndex, FRAME_STRUCT_SIZE)|0) + j)>>2]);
+                    orientX = +(HEAPF32[(framesPtr + (imul(frameIndex, FRAME_STRUCT_SIZE)|0) + j)>>2]);
                     j = (j + FRAME_STRUCT_SIZE)|0;
                 }
     
                 if (flags & 16) { // Orient Y
-                    orientY = toF(HEAPF32[(framesPtr + (imul(frameIndex, FRAME_STRUCT_SIZE)|0) + j)>>2]);
+                    orientY = +(HEAPF32[(framesPtr + (imul(frameIndex, FRAME_STRUCT_SIZE)|0) + j)>>2]);
                     j = (j + FRAME_STRUCT_SIZE)|0;
                 }
     
                 if (flags & 32) { // Orient Z
-                    orientZ = toF(HEAPF32[(framesPtr + (imul(frameIndex, FRAME_STRUCT_SIZE)|0) + j)>>2]);
+                    orientZ = +(HEAPF32[(framesPtr + (imul(frameIndex, FRAME_STRUCT_SIZE)|0) + j)>>2]);
                     j = (j + FRAME_STRUCT_SIZE)|0;
                 }
                 
-                temp = toF(toF(toF(toF(1.0) - toF(orientX*orientX)) - toF(orientY*orientY)) - toF(orientZ*orientZ));
-                orientW = toF(-sqrt(abs(+temp)));
+                temp = 1.0 - orientX * orientX - orientY * orientY - orientZ * orientZ;
+                orientW = -sqrt(abs(temp));
                     
                 if ((parentIndex|0) >= (0|0)) {
                     parentJointPtr = (jointsPtr + (imul(parentIndex, JOINT_STRUCT_SIZE)|0))|0;
-                    parentPosX = toF(HEAPF32[(parentJointPtr + f_JOINT_POS_0_OFFSET)>>2]);
-                    parentPosY = toF(HEAPF32[(parentJointPtr + f_JOINT_POS_1_OFFSET)>>2]);
-                    parentPosZ = toF(HEAPF32[(parentJointPtr + f_JOINT_POS_2_OFFSET)>>2]);
-                    parentOrientX = toF(HEAPF32[(parentJointPtr + f_JOINT_ORIENT_0_OFFSET)>>2]);
-                    parentOrientY = toF(HEAPF32[(parentJointPtr + f_JOINT_ORIENT_1_OFFSET)>>2]);
-                    parentOrientZ = toF(HEAPF32[(parentJointPtr + f_JOINT_ORIENT_2_OFFSET)>>2]);
-                    parentOrientW = toF(HEAPF32[(parentJointPtr + f_JOINT_ORIENT_3_OFFSET)>>2]);
+                    parentPosX = +(HEAPF32[(parentJointPtr + f_JOINT_POS_0_OFFSET)>>2]);
+                    parentPosY = +(HEAPF32[(parentJointPtr + f_JOINT_POS_1_OFFSET)>>2]);
+                    parentPosZ = +(HEAPF32[(parentJointPtr + f_JOINT_POS_2_OFFSET)>>2]);
+                    parentOrientX = +(HEAPF32[(parentJointPtr + f_JOINT_ORIENT_0_OFFSET)>>2]);
+                    parentOrientY = +(HEAPF32[(parentJointPtr + f_JOINT_ORIENT_1_OFFSET)>>2]);
+                    parentOrientZ = +(HEAPF32[(parentJointPtr + f_JOINT_ORIENT_2_OFFSET)>>2]);
+                    parentOrientW = +(HEAPF32[(parentJointPtr + f_JOINT_ORIENT_3_OFFSET)>>2]);
                     
-                    ix = toF(toF(toF(toF(parentOrientW) * toF(posX)) + toF(toF(parentOrientY) * toF(posZ))) - toF(toF(parentOrientZ) * toF(posY)));
-                    iy = toF(toF(toF(toF(parentOrientW) * toF(posY)) + toF(toF(parentOrientZ) * toF(posX))) - toF(toF(parentOrientX) * toF(posZ)));
-                    iz = toF(toF(toF(toF(parentOrientW) * toF(posZ)) + toF(toF(parentOrientX) * toF(posY))) - toF(toF(parentOrientY) * toF(posX)));
-                    iw = toF(toF(toF(toF(-parentOrientX) * toF(posX)) - toF(toF(parentOrientY) * toF(posY))) - toF(toF(parentOrientZ) * toF(posZ)));
+                    ix = parentOrientW * posX + parentOrientY * posZ - parentOrientZ * posY;
+                    iy = parentOrientW * posY + parentOrientZ * posX - parentOrientX * posZ;
+                    iz = parentOrientW * posZ + parentOrientX * posY - parentOrientY * posX;
+                    iw = -parentOrientX * posX - parentOrientY * posY - parentOrientZ * posZ;
 
-                    posX = toF(toF(toF(toF(ix) * toF(parentOrientW)) + toF(toF(iw) * toF(-parentOrientX))) + toF(toF(toF(iy) * toF(-parentOrientZ)) - toF(toF(iz) * toF(-parentOrientY))));
-                    posY = toF(toF(toF(toF(iy) * toF(parentOrientW)) + toF(toF(iw) * toF(-parentOrientY))) + toF(toF(toF(iz) * toF(-parentOrientX)) - toF(toF(ix) * toF(-parentOrientZ))));
-                    posZ = toF(toF(toF(toF(iz) * toF(parentOrientW)) + toF(toF(iw) * toF(-parentOrientZ))) + toF(toF(toF(ix) * toF(-parentOrientY)) - toF(toF(iy) * toF(-parentOrientX))));
+                    posX = ix * parentOrientW + iw * -parentOrientX + iy * -parentOrientZ - iz * -parentOrientY;
+                    posY = iy * parentOrientW + iw * -parentOrientY + iz * -parentOrientX - ix * -parentOrientZ;
+                    posZ = iz * parentOrientW + iw * -parentOrientZ + ix * -parentOrientY - iy * -parentOrientX;
 
-                    posX = toF(posX + parentPosX);
-                    posY = toF(posY + parentPosY);
-                    posZ = toF(posZ + parentPosZ);
+                    posX = posX + parentPosX;
+                    posY = posY + parentPosY;
+                    posZ = posZ + parentPosZ;
                     
-                    ix = toF(toF(toF(toF(parentOrientX * orientW) + toF(parentOrientW * orientX)) + toF(parentOrientY * orientZ)) - toF(parentOrientZ * orientY));
-                    iy = toF(toF(toF(toF(parentOrientY * orientW) + toF(parentOrientW * orientY)) + toF(parentOrientZ * orientX)) - toF(parentOrientX * orientZ));
-                    iz = toF(toF(toF(toF(parentOrientZ * orientW) + toF(parentOrientW * orientZ)) + toF(parentOrientX * orientY)) - toF(parentOrientY * orientX));
-                    iw = toF(toF(toF(toF(parentOrientW * orientW) - toF(parentOrientX * orientX)) - toF(parentOrientY * orientY)) - toF(parentOrientZ * orientZ));
+                    ix = parentOrientX * orientW + parentOrientW * orientX + parentOrientY * orientZ - parentOrientZ * orientY;
+                    iy = parentOrientY * orientW + parentOrientW * orientY + parentOrientZ * orientX - parentOrientX * orientZ;
+                    iz = parentOrientZ * orientW + parentOrientW * orientZ + parentOrientX * orientY - parentOrientY * orientX;
+                    iw = parentOrientW * orientW - parentOrientX * orientX - parentOrientY * orientY - parentOrientZ * orientZ;
                     orientX = ix;
                     orientY = iy;
                     orientZ = iz;
@@ -809,13 +809,14 @@ define([
 
         function asmSkin() {
             var i = 0, j = 0, k = 0;
-            var vx = toF(0), vy = toF(0), vz = toF(0),
-                nx = toF(0), ny = toF(0), nz = toF(0),
-                tx = toF(0), ty = toF(0), tz = toF(0),
-                rx = toF(0), ry = toF(0), rz = toF(0),
-                x = toF(0), y = toF(0), z = toF(0),
-                qx = toF(0), qy = toF(0), qz = toF(0), qw = toF(0),
-                ix = toF(0), iy = toF(0), iz = toF(0), iw = toF(0);
+            var vx = 0.0, vy = 0.0, vz = 0.0,
+                nx = 0.0, ny = 0.0, nz = 0.0,
+                tx = 0.0, ty = 0.0, tz = 0.0,
+                rx = 0.0, ry = 0.0, rz = 0.0,
+                x = 0.0, y = 0.0, z = 0.0,
+                qx = 0.0, qy = 0.0, qz = 0.0, qw = 0.0,
+                ix = 0.0, iy = 0.0, iz = 0.0, iw = 0.0,
+                weightBias = 0.0;
 
             var modelPtr = 0,
                 meshesPtr = 0, meshesLength = 0,
@@ -825,7 +826,7 @@ define([
             var meshPtr = 0, vertsPtr = 0, vertsLength = 0,
                 weightsPtr = 0, weightsLength = 0, vertPtr = 0, vertWeightsCount = 0,
                 vertWeightsIndex = 0, weightPtr = 0, jointPtr = 0, vertexPtr = 0,
-                weightBias = toF(0), jointIndex = 0, meshOffset = 0;
+                jointIndex = 0, meshOffset = 0;
 
             modelPtr = HEAP32[(HEAP_BASE + i_MODEL_STRUCT_PTR_OFFSET)>>2]|0;
             meshesPtr = HEAP32[(modelPtr + i_MODEL_MESHES_PTR_OFFSET)>>2]|0; 
@@ -848,9 +849,9 @@ define([
                     vertexPtr = ((imul(j, VERTEX_STRIDE)|0) + meshOffset)|0;
                     vertPtr = (vertsPtr + (imul(j, VERT_STRUCT_SIZE)|0))|0;
 
-                    vx = toF(0); vy = toF(0); vz = toF(0);
-                    nx = toF(0); ny = toF(0); nz = toF(0);
-                    tx = toF(0); ty = toF(0); tz = toF(0);
+                    vx = 0.0; vy = 0.0; vz = 0.0;
+                    nx = 0.0; ny = 0.0; nz = 0.0;
+                    tx = 0.0; ty = 0.0; tz = 0.0;
 
                     vertWeightsIndex = HEAP32[(vertPtr + i_VERT_WEIGHT_INDEX_OFFSET)>>2]|0;
                     vertWeightsCount = HEAP32[(vertPtr + i_VERT_WEIGHT_COUNT_OFFSET)>>2]|0;
@@ -860,70 +861,70 @@ define([
                         jointPtr = (jointsPtr + (imul(jointIndex, JOINT_STRUCT_SIZE)|0)|0);
 
                         // Rotate position
-                        x = toF(HEAPF32[(weightPtr + f_WEIGHT_POS_0_OFFSET)>>2]);
-                        y = toF(HEAPF32[(weightPtr + f_WEIGHT_POS_1_OFFSET)>>2]);
-                        z = toF(HEAPF32[(weightPtr + f_WEIGHT_POS_2_OFFSET)>>2]);
-                        qx = toF(HEAPF32[(jointPtr + f_JOINT_ORIENT_0_OFFSET)>>2]);
-                        qy = toF(HEAPF32[(jointPtr + f_JOINT_ORIENT_1_OFFSET)>>2]);
-                        qz = toF(HEAPF32[(jointPtr + f_JOINT_ORIENT_2_OFFSET)>>2]);
-                        qw = toF(HEAPF32[(jointPtr + f_JOINT_ORIENT_3_OFFSET)>>2]);
+                        x = +(HEAPF32[(weightPtr + f_WEIGHT_POS_0_OFFSET)>>2]);
+                        y = +(HEAPF32[(weightPtr + f_WEIGHT_POS_1_OFFSET)>>2]);
+                        z = +(HEAPF32[(weightPtr + f_WEIGHT_POS_2_OFFSET)>>2]);
+                        qx = +(HEAPF32[(jointPtr + f_JOINT_ORIENT_0_OFFSET)>>2]);
+                        qy = +(HEAPF32[(jointPtr + f_JOINT_ORIENT_1_OFFSET)>>2]);
+                        qz = +(HEAPF32[(jointPtr + f_JOINT_ORIENT_2_OFFSET)>>2]);
+                        qw = +(HEAPF32[(jointPtr + f_JOINT_ORIENT_3_OFFSET)>>2]);
 
                         // calculate quat * vec
-                        ix = toF(toF(toF(toF(qw) * toF(x)) + toF(toF(qy) * toF(z))) - toF(toF(qz) * toF(y)));
-                        iy = toF(toF(toF(toF(qw) * toF(y)) + toF(toF(qz) * toF(x))) - toF(toF(qx) * toF(z)));
-                        iz = toF(toF(toF(toF(qw) * toF(z)) + toF(toF(qx) * toF(y))) - toF(toF(qy) * toF(x)));
-                        iw = toF(toF(toF(toF(-qx) * toF(x)) - toF(toF(qy) * toF(y))) - toF(toF(qz) * toF(z)));
+                        ix = qw * x + qy * z - qz * y;
+                        iy = qw * y + qz * x - qx * z;
+                        iz = qw * z + qx * y - qy * x;
+                        iw = -qx * x - qy * y - qz * z;
 
                         // calculate result * inverse quat
-                        rx = toF(toF(toF(toF(ix) * toF(qw)) + toF(toF(iw) * toF(-qx))) + toF(toF(toF(iy) * toF(-qz)) - toF(toF(iz) * toF(-qy))));
-                        ry = toF(toF(toF(toF(iy) * toF(qw)) + toF(toF(iw) * toF(-qy))) + toF(toF(toF(iz) * toF(-qx)) - toF(toF(ix) * toF(-qz))));
-                        rz = toF(toF(toF(toF(iz) * toF(qw)) + toF(toF(iw) * toF(-qz))) + toF(toF(toF(ix) * toF(-qy)) - toF(toF(iy) * toF(-qx))));
+                        rx = ix * qw + iw * -qx + iy * -qz - iz * -qy;
+                        ry = iy * qw + iw * -qy + iz * -qx - ix * -qz;
+                        rz = iz * qw + iw * -qz + ix * -qy - iy * -qx;
 
                         // Translate position
-                        weightBias = toF(HEAPF32[(weightPtr + f_WEIGHT_BIAS_OFFSET)>>2]);
-                        vx = toF(toF(toF(toF(HEAPF32[(jointPtr + f_JOINT_POS_0_OFFSET)>>2]) + toF(rx)) * toF(weightBias)) + toF(vx));
-                        vy = toF(toF(toF(toF(HEAPF32[(jointPtr + f_JOINT_POS_1_OFFSET)>>2]) + toF(ry)) * toF(weightBias)) + toF(vy));
-                        vz = toF(toF(toF(toF(HEAPF32[(jointPtr + f_JOINT_POS_2_OFFSET)>>2]) + toF(rz)) * toF(weightBias)) + toF(vz));
+                        weightBias = +(HEAPF32[(weightPtr + f_WEIGHT_BIAS_OFFSET)>>2]);
+                        vx = (+(HEAPF32[(jointPtr + f_JOINT_POS_0_OFFSET)>>2]) + rx) * weightBias + vx;
+                        vy = (+(HEAPF32[(jointPtr + f_JOINT_POS_1_OFFSET)>>2]) + ry) * weightBias + vy;
+                        vz = (+(HEAPF32[(jointPtr + f_JOINT_POS_2_OFFSET)>>2]) + rz) * weightBias + vz;
 
                         // Rotate Normal
-                        x = toF(HEAPF32[(weightPtr + f_WEIGHT_NORMAL_0_OFFSET)>>2]);
-                        y = toF(HEAPF32[(weightPtr + f_WEIGHT_NORMAL_1_OFFSET)>>2]);
-                        z = toF(HEAPF32[(weightPtr + f_WEIGHT_NORMAL_2_OFFSET)>>2]);
+                        x = +(HEAPF32[(weightPtr + f_WEIGHT_NORMAL_0_OFFSET)>>2]);
+                        y = +(HEAPF32[(weightPtr + f_WEIGHT_NORMAL_1_OFFSET)>>2]);
+                        z = +(HEAPF32[(weightPtr + f_WEIGHT_NORMAL_2_OFFSET)>>2]);
 
                         // calculate quat * vec
-                        ix = toF(toF(toF(toF(qw) * toF(x)) + toF(toF(qy) * toF(z))) - toF(toF(qz) * toF(y)));
-                        iy = toF(toF(toF(toF(qw) * toF(y)) + toF(toF(qz) * toF(x))) - toF(toF(qx) * toF(z)));
-                        iz = toF(toF(toF(toF(qw) * toF(z)) + toF(toF(qx) * toF(y))) - toF(toF(qy) * toF(x)));
-                        iw = toF(toF(toF(toF(-qx) * toF(x)) - toF(toF(qy) * toF(y))) - toF(toF(qz) * toF(z)));
+                        ix = qw * x + qy * z - qz * y;
+                        iy = qw * y + qz * x - qx * z;
+                        iz = qw * z + qx * y - qy * x;
+                        iw = -qx * x - qy * y - qz * z;
 
                         // calculate result * inverse quat
-                        rx = toF(toF(toF(toF(ix) * toF(qw)) + toF(toF(iw) * toF(-qx))) + toF(toF(toF(iy) * toF(-qz)) - toF(toF(iz) * toF(-qy))));
-                        ry = toF(toF(toF(toF(iy) * toF(qw)) + toF(toF(iw) * toF(-qy))) + toF(toF(toF(iz) * toF(-qx)) - toF(toF(ix) * toF(-qz))));
-                        rz = toF(toF(toF(toF(iz) * toF(qw)) + toF(toF(iw) * toF(-qz))) + toF(toF(toF(ix) * toF(-qy)) - toF(toF(iy) * toF(-qx))));
+                        rx = ix * qw + iw * -qx + iy * -qz - iz * -qy;
+                        ry = iy * qw + iw * -qy + iz * -qx - ix * -qz;
+                        rz = iz * qw + iw * -qz + ix * -qy - iy * -qx;
 
-                        nx = toF(toF(toF(rx) * toF(weightBias)) + toF(nx));
-                        ny = toF(toF(toF(ry) * toF(weightBias)) + toF(ny));
-                        nz = toF(toF(toF(rz) * toF(weightBias)) + toF(nz));
+                        nx = rx * weightBias + nx;
+                        ny = ry * weightBias + ny;
+                        nz = rz * weightBias + nz;
 
                         // Rotate Tangent
-                        x = toF(HEAPF32[(weightPtr + f_WEIGHT_TANGENT_0_OFFSET)>>2]);
-                        y = toF(HEAPF32[(weightPtr + f_WEIGHT_TANGENT_1_OFFSET)>>2]);
-                        z = toF(HEAPF32[(weightPtr + f_WEIGHT_TANGENT_2_OFFSET)>>2]);
+                        x = +(HEAPF32[(weightPtr + f_WEIGHT_TANGENT_0_OFFSET)>>2]);
+                        y = +(HEAPF32[(weightPtr + f_WEIGHT_TANGENT_1_OFFSET)>>2]);
+                        z = +(HEAPF32[(weightPtr + f_WEIGHT_TANGENT_2_OFFSET)>>2]);
 
                         // calculate quat * vec
-                        ix = toF(toF(toF(toF(qw) * toF(x)) + toF(toF(qy) * toF(z))) - toF(toF(qz) * toF(y)));
-                        iy = toF(toF(toF(toF(qw) * toF(y)) + toF(toF(qz) * toF(x))) - toF(toF(qx) * toF(z)));
-                        iz = toF(toF(toF(toF(qw) * toF(z)) + toF(toF(qx) * toF(y))) - toF(toF(qy) * toF(x)));
-                        iw = toF(toF(toF(toF(-qx) * toF(x)) - toF(toF(qy) * toF(y))) - toF(toF(qz) * toF(z)));
+                        ix = qw * x + qy * z - qz * y;
+                        iy = qw * y + qz * x - qx * z;
+                        iz = qw * z + qx * y - qy * x;
+                        iw = -qx * x - qy * y - qz * z;
 
                         // calculate result * inverse quat
-                        rx = toF(toF(toF(toF(ix) * toF(qw)) + toF(toF(iw) * toF(-qx))) + toF(toF(toF(iy) * toF(-qz)) - toF(toF(iz) * toF(-qy))));
-                        ry = toF(toF(toF(toF(iy) * toF(qw)) + toF(toF(iw) * toF(-qy))) + toF(toF(toF(iz) * toF(-qx)) - toF(toF(ix) * toF(-qz))));
-                        rz = toF(toF(toF(toF(iz) * toF(qw)) + toF(toF(iw) * toF(-qz))) + toF(toF(toF(ix) * toF(-qy)) - toF(toF(iy) * toF(-qx))));
+                        rx = ix * qw + iw * -qx + iy * -qz - iz * -qy;
+                        ry = iy * qw + iw * -qy + iz * -qx - ix * -qz;
+                        rz = iz * qw + iw * -qz + ix * -qy - iy * -qx;
 
-                        tx = toF(toF(toF(rx) * toF(weightBias)) + toF(tx));
-                        ty = toF(toF(toF(ry) * toF(weightBias)) + toF(ty));
-                        tz = toF(toF(toF(rz) * toF(weightBias)) + toF(tz));
+                        tx = rx * weightBias + tx;
+                        ty = ry * weightBias + ty;
+                        tz = rz * weightBias + tz;
                     }
                     // Position
                     HEAPF32[(vertexPtr + f_VERTEXT_POS_0_OFFSET)>>2] = vx;
