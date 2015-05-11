@@ -574,17 +574,17 @@ define([
         var SIMD_float32x4_splat = SIMD_float32x4.splat;
         var VERTEX_ELEMENTS = 11; // 3 Pos, 2 UV, 3 Norm, 3 Tangent
         var VERTEX_STRIDE = 44;
-        var f_VERTEXT_POS_0_OFFSET = 0;
-        var f_VERTEXT_POS_1_OFFSET = 4;
-        var f_VERTEXT_POS_2_OFFSET = 8;
-        var f_VERTEXT_UV_0_OFFSET =  12;
-        var f_VERTEXT_UV_1_OFFSET = 16;
-        var f_VERTEXT_NORMAL_0_OFFSET = 20;
-        var f_VERTEXT_NORMAL_1_OFFSET = 24;
-        var f_VERTEXT_NORMAL_2_OFFSET = 28;
-        var f_VERTEXT_TANGENT_0_OFFSET = 32;
-        var f_VERTEXT_TANGENT_1_OFFSET = 36;
-        var f_VERTEXT_TANGENT_2_OFFSET = 40;
+        var f_VERTEX_POS_0_OFFSET = 0;
+        var f_VERTEX_POS_1_OFFSET = 4;
+        var f_VERTEX_POS_2_OFFSET = 8;
+        var f_VERTEX_UV_0_OFFSET =  12;
+        var f_VERTEX_UV_1_OFFSET = 16;
+        var f_VERTEX_NORMAL_0_OFFSET = 20;
+        var f_VERTEX_NORMAL_1_OFFSET = 24;
+        var f_VERTEX_NORMAL_2_OFFSET = 28;
+        var f_VERTEX_TANGENT_0_OFFSET = 32;
+        var f_VERTEX_TANGENT_1_OFFSET = 36;
+        var f_VERTEX_TANGENT_2_OFFSET = 40;
         
         // Memory Layout
         var HEAP_BASE = 0;
@@ -924,23 +924,23 @@ define([
                         tz = rz * weightBias + tz;
                     }
                     // Position
-                    HEAPF32[(vertexPtr + f_VERTEXT_POS_0_OFFSET)>>2] = vx;
-                    HEAPF32[(vertexPtr + f_VERTEXT_POS_1_OFFSET)>>2] = vy;
-                    HEAPF32[(vertexPtr + f_VERTEXT_POS_2_OFFSET)>>2] = vz;
+                    HEAPF32[(vertexPtr + f_VERTEX_POS_0_OFFSET)>>2] = vx;
+                    HEAPF32[(vertexPtr + f_VERTEX_POS_1_OFFSET)>>2] = vy;
+                    HEAPF32[(vertexPtr + f_VERTEX_POS_2_OFFSET)>>2] = vz;
 
                     // TexCoord
-                    HEAPF32[(vertexPtr + f_VERTEXT_UV_0_OFFSET)>>2] = HEAPF32[(vertPtr + f_VERT_TEXCOORD_0_OFFSET)>>2];
-                    HEAPF32[(vertexPtr + f_VERTEXT_UV_1_OFFSET)>>2] = HEAPF32[(vertPtr + f_VERT_TEXCOORD_1_OFFSET)>>2];
+                    HEAPF32[(vertexPtr + f_VERTEX_UV_0_OFFSET)>>2] = HEAPF32[(vertPtr + f_VERT_TEXCOORD_0_OFFSET)>>2];
+                    HEAPF32[(vertexPtr + f_VERTEX_UV_1_OFFSET)>>2] = HEAPF32[(vertPtr + f_VERT_TEXCOORD_1_OFFSET)>>2];
 
                     // Normal
-                    HEAPF32[(vertexPtr + f_VERTEXT_NORMAL_0_OFFSET)>>2] = nx;
-                    HEAPF32[(vertexPtr + f_VERTEXT_NORMAL_1_OFFSET)>>2] = ny;
-                    HEAPF32[(vertexPtr + f_VERTEXT_NORMAL_2_OFFSET)>>2] = nz;
+                    HEAPF32[(vertexPtr + f_VERTEX_NORMAL_0_OFFSET)>>2] = nx;
+                    HEAPF32[(vertexPtr + f_VERTEX_NORMAL_1_OFFSET)>>2] = ny;
+                    HEAPF32[(vertexPtr + f_VERTEX_NORMAL_2_OFFSET)>>2] = nz;
 
                     // Tangent
-                    HEAPF32[(vertexPtr + f_VERTEXT_TANGENT_0_OFFSET)>>2] = tx;
-                    HEAPF32[(vertexPtr + f_VERTEXT_TANGENT_1_OFFSET)>>2] = ty;
-                    HEAPF32[(vertexPtr + f_VERTEXT_TANGENT_2_OFFSET)>>2] = tz;
+                    HEAPF32[(vertexPtr + f_VERTEX_TANGENT_0_OFFSET)>>2] = tx;
+                    HEAPF32[(vertexPtr + f_VERTEX_TANGENT_1_OFFSET)>>2] = ty;
+                    HEAPF32[(vertexPtr + f_VERTEX_TANGENT_2_OFFSET)>>2] = tz;
                 }
             }
         }
@@ -1061,16 +1061,16 @@ define([
                     }
     
                     // Position
-                    SIMD_float32x4_store(HEAPU8, (vertexPtr + f_VERTEXT_POS_0_OFFSET)|0, vx4);
+                    SIMD_float32x4_store(HEAPU8, (vertexPtr + f_VERTEX_POS_0_OFFSET)|0, vx4);
     
                     // TexCoord
-                    SIMD_float32x4_store(HEAPU8, (vertexPtr + f_VERTEXT_UV_0_OFFSET)|0, SIMD_float32x4_load(HEAPU8, (vertPtr + f_VERT_TEXCOORD_0_OFFSET)|0));
+                    SIMD_float32x4_store(HEAPU8, (vertexPtr + f_VERTEX_UV_0_OFFSET)|0, SIMD_float32x4_load(HEAPU8, (vertPtr + f_VERT_TEXCOORD_0_OFFSET)|0));
     
                     // Normal
-                    SIMD_float32x4_store(HEAPU8, (vertexPtr + f_VERTEXT_NORMAL_0_OFFSET)|0, nx4);
+                    SIMD_float32x4_store(HEAPU8, (vertexPtr + f_VERTEX_NORMAL_0_OFFSET)|0, nx4);
     
                     // Tangent
-                    SIMD_float32x4_store(HEAPU8, (vertexPtr + f_VERTEXT_TANGENT_0_OFFSET)|0, tx4);
+                    SIMD_float32x4_store(HEAPU8, (vertexPtr + f_VERTEX_TANGENT_0_OFFSET)|0, tx4);
                 }
             }
         }
