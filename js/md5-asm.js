@@ -50,7 +50,7 @@ define([
         this.meshes = null;
         this.pos = vec3.create([0.0, 0.0, 0.0]);
         this.mesh_texture_loaded = 0;
-        this.buffer = new ArrayBuffer(1 * 1024 * 1024);
+        this.buffer = new ArrayBuffer(512 * 1024);
         this.end = 0;
         this.asmSkin = _asmjsModule(window, null, this.buffer).asmSkin;
         this.asmSkinSIMD = _asmjsModule(window, null, this.buffer).asmSkinSIMD;
