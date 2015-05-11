@@ -53,7 +53,10 @@ define([
         this.buffer = new ArrayBuffer(512 * 1024);
         this.end = 0;
         this.asmSkin = _asmjsModule(window, null, this.buffer).asmSkin;
-        this.asmSkinSIMD = _asmjsModule(window, null, this.buffer).asmSkinSIMD;
+        if (typeof SIMD !== 'undefined')
+            this.asmSkinSIMD = _asmjsModuleSIMD(window, null, this.buffer).asmSkinSIMD;
+        else
+            this.asmSkinSIMD = function() {};
         this.asmGetFrameJoints = _asmjsModule(window, null, this.buffer).asmGetFrameJoints;
     }; 
 
@@ -563,14 +566,6 @@ define([
         var toF = global.Math.fround;
         var sqrt = global.Math.sqrt;
         var abs = global.Math.abs;
-        var SIMD_float32x4 = global.SIMD.float32x4;
-        var SIMD_float32x4_load = SIMD_float32x4.load;
-        var SIMD_float32x4_store = SIMD_float32x4.store;
-        var SIMD_float32x4_mul = SIMD_float32x4.mul;
-        var SIMD_float32x4_add = SIMD_float32x4.add;
-        var SIMD_float32x4_sub = SIMD_float32x4.sub;
-        var SIMD_float32x4_swizzle = SIMD_float32x4.swizzle;
-        var SIMD_float32x4_splat = SIMD_float32x4.splat;
         var VERTEX_ELEMENTS = 11; // 3 Pos, 2 UV, 3 Norm, 3 Tangent
         var VERTEX_STRIDE = 44;
         var f_VERTEX_POS_0_OFFSET = 0;
@@ -944,6 +939,136 @@ define([
             }
         }
 
+        return {
+            asmSkin: asmSkin,
+            asmGetFrameJoints: asmGetFrameJoints
+        };
+    }
+    
+    function _asmjsModuleSIMD (global, imp, buffer) {
+        "use asm";
+        var HEAPF32 = new global.Float32Array(buffer);
+        var HEAP32 = new global.Int32Array(buffer);
+        var HEAPU8 = new global.Uint8Array(buffer);
+        var imul = global.Math.imul;
+        var toF = global.Math.fround;
+        var sqrt = global.Math.sqrt;
+        var abs = global.Math.abs;
+        var SIMD_float32x4 = global.SIMD.float32x4;
+        var SIMD_float32x4_load = SIMD_float32x4.load;
+        var SIMD_float32x4_store = SIMD_float32x4.store;
+        var SIMD_float32x4_mul = SIMD_float32x4.mul;
+        var SIMD_float32x4_add = SIMD_float32x4.add;
+        var SIMD_float32x4_sub = SIMD_float32x4.sub;
+        var SIMD_float32x4_swizzle = SIMD_float32x4.swizzle;
+        var SIMD_float32x4_splat = SIMD_float32x4.splat;
+        var VERTEX_ELEMENTS = 11; // 3 Pos, 2 UV, 3 Norm, 3 Tangent
+        var VERTEX_STRIDE = 44;
+        var f_VERTEX_POS_0_OFFSET = 0;
+        var f_VERTEX_POS_1_OFFSET = 4;
+        var f_VERTEX_POS_2_OFFSET = 8;
+        var f_VERTEX_UV_0_OFFSET =  12;
+        var f_VERTEX_UV_1_OFFSET = 16;
+        var f_VERTEX_NORMAL_0_OFFSET = 20;
+        var f_VERTEX_NORMAL_1_OFFSET = 24;
+        var f_VERTEX_NORMAL_2_OFFSET = 28;
+        var f_VERTEX_TANGENT_0_OFFSET = 32;
+        var f_VERTEX_TANGENT_1_OFFSET = 36;
+        var f_VERTEX_TANGENT_2_OFFSET = 40;
+        
+        // Memory Layout
+        var HEAP_BASE = 0;
+        // Header
+        var HEADER_SIZE = 12;
+        var i_MODEL_STRUCT_PTR_OFFSET = 0;
+        var i_VERT_ARRAY_PTR_OFFSET = 4;
+        var i_ANIMATION_STRUCT_PTR_OFFSET = 8;
+        
+        // Model struct
+        var MODEL_STRUCT_SIZE = 16;
+        var i_MODEL_MESHES_PTR_OFFSET = 0;
+        var i_MODEL_MESHES_LENGTH_OFFSET = 4;
+        var i_MODEL_JOINTS_PTR_OFFSET = 8;
+        var i_MODEL_JOINTS_LENGTH_OFFSET = 12; 
+        
+        // Mesh struct
+        var MESH_STRUCT_SIZE = 20;
+        var i_MESH_VERT_OFFSET_OFFSET = 0;
+        var i_MESH_VERTS_PTR_OFFSET = 4;
+        var i_MESH_VERTS_LENGTH_OFFSET = 8;
+        var i_MESH_WEIGHTS_PTR_OFFSET = 12;
+        var i_MESH_WEIGHTS_LENGTH_OFFSET = 16;
+        
+        // Vert struct
+        var VERT_STRUCT_SIZE = 16;
+        var f_VERT_TEXCOORD_0_OFFSET = 0;
+        var f_VERT_TEXCOORD_1_OFFSET = 4;
+        var i_VERT_WEIGHT_INDEX_OFFSET = 8;
+        var i_VERT_WEIGHT_COUNT_OFFSET = 12;
+        
+        // Weight struct
+        var WEIGHT_STRUCT_SIZE = 56;
+        var i_WEIGHT_JOINT_INDEX_OFFSET = 0;
+        var f_WEIGHT_BIAS_OFFSET = 4;
+        var f_WEIGHT_POS_0_OFFSET = 8;
+        var f_WEIGHT_POS_1_OFFSET = 12;
+        var f_WEIGHT_POS_2_OFFSET = 16;
+        var f_WEIGHT_POS_3_OFFSET = 20;
+        var f_WEIGHT_NORMAL_0_OFFSET = 24;
+        var f_WEIGHT_NORMAL_1_OFFSET = 28;
+        var f_WEIGHT_NORMAL_2_OFFSET = 32;
+        var f_WEIGHT_NORMAL_3_OFFSET = 36;
+        var f_WEIGHT_TANGENT_0_OFFSET = 40;
+        var f_WEIGHT_TANGENT_1_OFFSET = 44;
+        var f_WEIGHT_TANGENT_2_OFFSET = 48;
+        var f_WEIGHT_TANGENT_3_OFFSET = 52;
+        
+        // Joint struct
+        var JOINT_STRUCT_SIZE = 32;
+        var f_JOINT_POS_0_OFFSET = 0;
+        var f_JOINT_POS_1_OFFSET = 4;
+        var f_JOINT_POS_2_OFFSET = 8;
+        var f_JOINT_POS_3_OFFSET = 12;
+        var f_JOINT_ORIENT_0_OFFSET = 16;
+        var f_JOINT_ORIENT_1_OFFSET = 20;
+        var f_JOINT_ORIENT_2_OFFSET = 24;
+        var f_JOINT_ORIENT_3_OFFSET = 28;
+        
+        // Animation Struct
+        var ANIMATION_STRUCT_SIZE = 24;
+        var i_ANIMATION_HIERARCHY_PTR_OFFSET = 0;
+        var i_ANIMATION_HIERARCHY_LENGTH_OFFSET = 4;
+        var i_ANIMATION_BASEFRAME_PTR_OFFSET = 8;
+        var i_ANIMATION_BASEFRAME_LENGTH_OFFSET = 12;
+        var i_ANIMATION_FRAMES_PTR_OFFSET = 16;
+        var i_ANIMATION_FRAMES_LENGTH_OFFSET = 20;
+        
+        // Hierarchy Struct
+        var HIERARCHY_STRUCT_SIZE = 12;
+        var i_HIERARCHY_PARENT_OFFSET = 0;
+        var i_HIERARCHY_FLAGS_OFFSET = 4;
+        var i_HIERARCHY_INDEX_OFFSET = 8;
+        
+        // BaseFrame Struct
+        var BASEFRAME_STRUCT_SIZE = 32;
+        var f_BASEFRAME_POS_0_OFFSET = 0;
+        var f_BASEFRAME_POS_1_OFFSET = 4;
+        var f_BASEFRAME_POS_2_OFFSET = 8;
+        var f_BASEFRAME_POS_3_OFFSET = 12;
+        var f_BASEFRAME_ORIENT_0_OFFSET = 16;
+        var f_BASEFRAME_ORIENT_1_OFFSET = 20;
+        var f_BASEFRAME_ORIENT_2_OFFSET = 24;
+        var f_BASEFRAME_ORIENT_3_OFFSET = 28;
+        
+        // Frames Struct
+        var FRAMES_STRUCT_SIZE = 8;
+        var i_FRAMES_PTR_OFFSET = 0;
+        var i_FRAMES_LENGTH_OFFSET = 4;
+        
+        // Frame
+        var FRAME_STRUCT_SIZE = 4;
+        var f_FRAME_VALUE_OFFSET = 0;
+        
         function asmSkinSIMD() {
             var i = 0, j = 0, k = 0;
             var modelPtr = 0,
@@ -1075,10 +1200,8 @@ define([
         }
         
         return {
-            asmSkin: asmSkin,
             asmSkinSIMD: asmSkinSIMD,
-            asmGetFrameJoints: asmGetFrameJoints
-        }
+        };
     }
 
     Md5Mesh.prototype.setAnimationFrame = function(gl, animation, frame) {
