@@ -71,6 +71,41 @@
   var f_JOINT_ORIENT_2_OFFSET = 24;
   var f_JOINT_ORIENT_3_OFFSET = 28;
   
+  // Animation Struct
+  var ANIMATION_STRUCT_SIZE = 24;
+  var i_ANIMATION_HIERARCHY_PTR_OFFSET = 0;
+  var i_ANIMATION_HIERARCHY_LENGTH_OFFSET = 4;
+  var i_ANIMATION_BASEFRAME_PTR_OFFSET = 8;
+  var i_ANIMATION_BASEFRAME_LENGTH_OFFSET = 12;
+  var i_ANIMATION_FRAMES_PTR_OFFSET = 16;
+  var i_ANIMATION_FRAMES_LENGTH_OFFSET = 20;
+  
+  // Hierarchy Struct
+  var HIERARCHY_STRUCT_SIZE = 12;
+  var i_HIERARCHY_PARENT_OFFSET = 0;
+  var i_HIERARCHY_FLAGS_OFFSET = 4;
+  var i_HIERARCHY_INDEX_OFFSET = 8;
+  
+  // BaseFrame Struct
+  var BASEFRAME_STRUCT_SIZE = 32;
+  var f_BASEFRAME_POS_0_OFFSET = 0;
+  var f_BASEFRAME_POS_1_OFFSET = 4;
+  var f_BASEFRAME_POS_2_OFFSET = 8;
+  var f_BASEFRAME_POS_3_OFFSET = 12;
+  var f_BASEFRAME_ORIENT_0_OFFSET = 16;
+  var f_BASEFRAME_ORIENT_1_OFFSET = 20;
+  var f_BASEFRAME_ORIENT_2_OFFSET = 24;
+  var f_BASEFRAME_ORIENT_3_OFFSET = 28;
+  
+  // Frames Struct
+  var FRAMES_STRUCT_SIZE = 8;
+  var i_FRAMES_PTR_OFFSET = 0;
+  var i_FRAMES_LENGTH_OFFSET = 4;
+  
+  // Frame
+  var FRAME_STRUCT_SIZE = 4;
+  var f_FRAME_VALUE_OFFSET = 0;
+
   var VERTEX_ELEMENTS = 11;
   var VERTEX_STRIDE = 44;
 
@@ -170,11 +205,73 @@
       HEAP32[(header_ptr + i_ANIMATION_STRUCT_PTR_OFFSET)>>2] = ptr;
   };
 
+  var ANIM_HIERARCHY_LENGTH = 100;
+  var ANIM_BASEFRAME_LENGTH = 100;
+  var ANIM_FRAMES_LENGTH = 100;
+  var FRAMES_LENGTH = 100;
+
+  function initializeArrayBufferForAnimation (buffer) {
+      var HEAP32 = new Int32Array(buffer);
+      var HEAPF32 = new Float32Array(buffer);
+      var header_ptr = 0;
+      var anim_ptr = HEAP32[(header_ptr + i_ANIMATION_STRUCT_PTR_OFFSET)>>2];
+      var ptr = 0;
+
+      // Allocate Animation struct
+      ptr = anim_ptr + ANIMATION_STRUCT_SIZE;        
+      HEAP32[(anim_ptr + i_ANIMATION_HIERARCHY_PTR_OFFSET)>>2] = 0;
+      HEAP32[(anim_ptr + i_ANIMATION_HIERARCHY_LENGTH_OFFSET)>>2] = ANIM_HIERARCHY_LENGTH;
+      HEAP32[(anim_ptr + i_ANIMATION_BASEFRAME_PTR_OFFSET)>>2] = 0;
+      HEAP32[(anim_ptr + i_ANIMATION_BASEFRAME_LENGTH_OFFSET)>>2] = ANIM_BASEFRAME_LENGTH;
+      HEAP32[(anim_ptr + i_ANIMATION_FRAMES_PTR_OFFSET)>>2] = 0;
+      HEAP32[(anim_ptr + i_ANIMATION_FRAMES_LENGTH_OFFSET)>>2] = ANIM_FRAMES_LENGTH;
+
+      // Allocate Hierarchy array
+      HEAP32[(anim_ptr + i_ANIMATION_HIERARCHY_PTR_OFFSET)>>2] = ptr;
+      var hierarchy_array_ptr = ptr;
+      ptr += ANIM_HIERARCHY_LENGTH * HIERARCHY_STRUCT_SIZE;
+      for (var i = 0; i < ANIM_HIERARCHY_LENGTH; ++i) {
+          HEAP32[(hierarchy_array_ptr + i * HIERARCHY_STRUCT_SIZE + i_HIERARCHY_PARENT_OFFSET)>>2] = 0;
+          HEAP32[(hierarchy_array_ptr + i * HIERARCHY_STRUCT_SIZE + i_HIERARCHY_FLAGS_OFFSET)>>2] = 0;
+          HEAP32[(hierarchy_array_ptr + i * HIERARCHY_STRUCT_SIZE + i_HIERARCHY_INDEX_OFFSET)>>2] = 0;
+      }
+      // Allocate BaseFrame array
+      HEAP32[(anim_ptr + i_ANIMATION_BASEFRAME_PTR_OFFSET)>>2] = ptr;
+      var baseframe_array_ptr = ptr;
+      ptr += ANIM_BASEFRAME_LENGTH * BASEFRAME_STRUCT_SIZE;
+      for (var i = 0; i < ANIM_BASEFRAME_LENGTH; ++i) {
+          HEAPF32[(baseframe_array_ptr + i * BASEFRAME_STRUCT_SIZE + f_BASEFRAME_POS_0_OFFSET)>>2] = 0.1;
+          HEAPF32[(baseframe_array_ptr + i * BASEFRAME_STRUCT_SIZE + f_BASEFRAME_POS_1_OFFSET)>>2] = 0.1;
+          HEAPF32[(baseframe_array_ptr + i * BASEFRAME_STRUCT_SIZE + f_BASEFRAME_POS_2_OFFSET)>>2] = 0.1;
+          HEAPF32[(baseframe_array_ptr + i * BASEFRAME_STRUCT_SIZE + f_BASEFRAME_POS_3_OFFSET)>>2] = 0;
+          HEAPF32[(baseframe_array_ptr + i * BASEFRAME_STRUCT_SIZE + f_BASEFRAME_ORIENT_0_OFFSET)>>2] = 0.1;
+          HEAPF32[(baseframe_array_ptr + i * BASEFRAME_STRUCT_SIZE + f_BASEFRAME_ORIENT_1_OFFSET)>>2] = 0.1;
+          HEAPF32[(baseframe_array_ptr + i * BASEFRAME_STRUCT_SIZE + f_BASEFRAME_ORIENT_2_OFFSET)>>2] = 0.1;
+          HEAPF32[(baseframe_array_ptr + i * BASEFRAME_STRUCT_SIZE + f_BASEFRAME_ORIENT_3_OFFSET)>>2] = 0;
+      }
+      // Allocate Frames array
+      HEAP32[(anim_ptr + i_ANIMATION_FRAMES_PTR_OFFSET)>>2] = ptr;
+      var frames_array_ptr = ptr;
+      ptr += ANIM_FRAMES_LENGTH * FRAMES_STRUCT_SIZE;
+      for (var i = 0; i < ANIM_FRAMES_LENGTH; ++i) {
+          HEAP32[(frames_array_ptr + i * FRAMES_STRUCT_SIZE +  i_FRAMES_PTR_OFFSET)>>2] = 0;
+          HEAP32[(frames_array_ptr + i * FRAMES_STRUCT_SIZE +  i_FRAMES_LENGTH_OFFSET)>>2] = FRAMES_LENGTH;
+          // Allocate Frame array
+          HEAP32[(frames_array_ptr + i * FRAMES_STRUCT_SIZE +  i_FRAMES_PTR_OFFSET)>>2] = ptr;
+          var frames_ptr = ptr;
+          ptr += FRAMES_LENGTH * FRAME_STRUCT_SIZE;
+          for (var j = 0; j < FRAMES_LENGTH; ++j) {
+              HEAPF32[(frames_ptr + j * FRAME_STRUCT_SIZE + f_FRAME_VALUE_OFFSET)>>2] = 0.1;       
+          }
+      }
+  };
+
   var buffer = new ArrayBuffer(512 * 1024);
 
   // Kernel Initializer
   function init () {
     initializeArrayBuffer(buffer);
+    initializeArrayBufferForAnimation(buffer);
     return simd (1) === nonSimd (1);
   }
 
@@ -830,12 +927,15 @@
       };
   }
 
-  var skin = asmjsModule(this, {}, buffer).asmSkin;
+  var module = asmjsModule(this, {}, buffer);
+  var skin = module.asmSkin;
+  var getFrameJoints = module.asmGetFrameJoints;
   var skinSIMD = asmjsModuleSIMD(this, {}, buffer).asmSkinSIMD;
 
   // SIMD version of the kernel
   function simd (n) {
     for (var i = 0; i < n; ++i) {
+      getFrameJoints();
       skinSIMD();
     }
     return true;
@@ -844,6 +944,7 @@
   // Non SIMD version of the kernel
   function nonSimd (n) {
     for (var i = 0; i < n; ++i) {
+      getFrameJoints();
       skin();
     }
     return true;
