@@ -92,6 +92,7 @@ require([
     var lightColor = vec3.create([1, 1, 1]);
     var specularColor = vec3.create([1, 1, 1]);
     var shininess = 8;
+    var meshIndex = 0;
 
     var Renderer = function (gl, canvas) {
         this.camera = new Camera.OrbitCamera(canvas);
@@ -152,7 +153,7 @@ require([
 
     Renderer.prototype.addMesh = function(gl) {
         var self = this;
-        var model = new MD5.Md5Mesh();
+        var model = new MD5.Md5Mesh(meshIndex++);
         if (autoAdjust && useSimd)
             model.simd = true;
         model.load(gl, 'models/md5/monsters/hellknight/hellknight.md5mesh', function(mesh) {
@@ -194,6 +195,7 @@ require([
             //console.log('Only 1 model');
             return;
         }
+        meshIndex--;
         var anim = this.animations.pop();
         clearInterval(anim.handle);
         this.models.pop();
