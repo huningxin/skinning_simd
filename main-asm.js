@@ -111,6 +111,7 @@ require([
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
         
+        this.handle = null;
         this.animations = [];
         this.meshShader = GLUtil.createProgram(gl, meshVS, meshFS);
         this.models = [];
@@ -166,6 +167,8 @@ require([
             mesh.pos = vec3.create([x, y, 0.0]);
             self.models.push(mesh);
 
+            createVertexBuffer(gl,self.models.length);
+
             if (self.models.length == 1) {
                 var loading = document.getElementById('loading');
                 loading.style.visibility = 'hidden';
@@ -173,32 +176,41 @@ require([
 
             meshNumber.innerHTML = self.models.length;
 
-            var anim = new MD5.Md5Anim();
+            var currentFrame = Math.round(Math.random() * 120);
+            var anim = new MD5.Md5Anim(currentFrame);
             anim.load('models/md5/monsters/hellknight/idle2.md5anim', function(anim) {
-                var currentFrame = Math.round(Math.random() * 120);
                 var interval = 1000 / anim.frameRate;
                 
                 model.setAnimation(anim);
 
-                var handle = setInterval(function() {
-                    currentFrame++;
-                    model.setAnimationFrame(gl, anim, currentFrame);
-                }, interval);
+                if (self.handle === null) {
+                    self.handle = setInterval(function() {
+                        for (var i = 0; i < self.models.length; ++i) {
+                            var model = self.models[i];
+                            var anim = model.anim;
+                            if (anim !== null) {
+                                anim.currentFrame++;
+                                model.setAnimationFrame(gl, anim.currentFrame);
+                            }
+                        }
+                        bindVertexBuffer(gl);
+                    }, interval);
+                }
 
-                self.animations.push({anim: anim, handle: handle});
+                self.animations.push(anim);
             });
         });
     };
 
-    Renderer.prototype.removeMesh = function() {
+    Renderer.prototype.removeMesh = function(gl) {
         if (this.models.length == 1) {
             //console.log('Only 1 model');
             return;
         }
         meshIndex--;
-        var anim = this.animations.pop();
-        clearInterval(anim.handle);
+        this.animations.pop();
         this.models.pop();
+        createVertexBuffer(gl, this.models.length);
         meshNumber.innerHTML = this.models.length;
     }
 
@@ -217,7 +229,7 @@ require([
 
     var removeBtn = document.getElementById("removeBtn");
     removeBtn.addEventListener("click", function() {
-        renderer.removeMesh();
+        renderer.removeMesh(contextHelper.gl);
     });
 
     var meshNumber = document.getElementById("meshes");
@@ -354,7 +366,7 @@ var MeshAdjuster = function (renderer, gl, stats) {
             }
 
             if (missTarget >= missNumber && meetTarget == 0) {
-                renderer.removeMesh();
+                renderer.removeMesh(gl);
                 unstable = 1;
                 missNumber+=1;
                 //console.log('removeMesh');

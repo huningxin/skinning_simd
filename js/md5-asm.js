@@ -27,7 +27,12 @@
  */
 
 var buffer = new ArrayBuffer(128 * 512 * 1024);
-var MESH_MEMORY_SIZE = 524288; // 512 * 1024
+var MESH_MEMORY_SIZE = 302556;
+var VERTEX_ELEMENTS = 11; // 3 Pos, 2 UV, 3 Norm, 3 Tangent
+var VERTEX_STRIDE = 44;
+var VERTEX_MEMORY_BASE = 38727168; // MESH_MEMORY_SIZE * 128
+var VERTEX_NUM = 1737;
+var VERTEX_MEMORY_SIZE = 76428; // VERTEX_NUM * VERTEX_ELEMENTS * 4
 
 function _asmjsModule (global, imp, buffer) {
     "use asm";
@@ -145,7 +150,7 @@ function _asmjsModule (global, imp, buffer) {
     var FRAME_STRUCT_SIZE = 4;
     var f_FRAME_VALUE_OFFSET = 0;
 
-    var MESH_MEMORY_SIZE = 524288;
+    var MESH_MEMORY_SIZE = 302556;
 
     function asmGetFrameJoints(frame, meshIndex) {
         frame = frame|0;
@@ -548,7 +553,7 @@ function _asmjsModuleSIMD (global, imp, buffer) {
     var FRAME_STRUCT_SIZE = 4;
     var f_FRAME_VALUE_OFFSET = 0;
 
-    var MESH_MEMORY_SIZE = 524288;
+    var MESH_MEMORY_SIZE = 302556;
     
     function asmSkinSIMD(meshIndex) {
         meshIndex = meshIndex|0;
@@ -695,6 +700,23 @@ var asmSkinSIMD = _asmjsModuleSIMD(this, {}, buffer).asmSkinSIMD;
 var getFrameJoints = asmGetFrameJoints;
 var skin = asmSkin;
 
+var vertBuffer = null;
+var vertArray = null;
+
+function createVertexBuffer(gl, meshCount) {
+    if (vertBuffer === null) {
+        vertBuffer = gl.createBuffer();
+    }
+    vertArray = new Float32Array(buffer, VERTEX_MEMORY_BASE, meshCount * VERTEX_NUM * VERTEX_ELEMENTS)
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertArray, gl.STATIC_DRAW);
+}
+
+function bindVertexBuffer(gl) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertArray, gl.STATIC_DRAW);
+}
+
 define([
     "util/gl-util",
     "util/gl-matrix-min"
@@ -704,8 +726,6 @@ define([
 
     var BASE_PATH = "root/"
     var MAX_WEIGHTS = 6;
-    var VERTEX_ELEMENTS = 11; // 3 Pos, 2 UV, 3 Norm, 3 Tangent
-    var VERTEX_STRIDE = 44;
 
     var useSIMD = false;
 
@@ -727,6 +747,7 @@ define([
         this.mesh_texture_loaded = 0;
         this.end = 0;
         this.index = index;
+        this.anim = null;
     }; 
 
     Md5Mesh.prototype.load = function(gl, url, callback) {
@@ -1032,7 +1053,7 @@ define([
     var FRAME_STRUCT_SIZE = 4;
     var f_FRAME_VALUE_OFFSET = 0;
 
-    var MESH_MEMORY_SIZE = 524288;
+    var MESH_MEMORY_SIZE = 302556;
 
     Md5Mesh.prototype._initializeArrayBuffer = function() {
         var HEAPF32 = new Float32Array(buffer);
@@ -1045,7 +1066,8 @@ define([
         var header_ptr = ptr;
         ptr += HEADER_SIZE;
         HEAP32[(header_ptr + i_MODEL_STRUCT_PTR_OFFSET)>>2] = 0;
-        HEAP32[(header_ptr + i_VERT_ARRAY_PTR_OFFSET)>>2] = 0;
+        var vertex_array_ptr = VERTEX_MEMORY_BASE + this.index * VERTEX_MEMORY_SIZE;
+        HEAP32[(header_ptr + i_VERT_ARRAY_PTR_OFFSET)>>2] = vertex_array_ptr
         HEAP32[(header_ptr + i_ANIMATION_STRUCT_PTR_OFFSET)>>2] = 0;
         // Allocate Model struct
         HEAP32[(header_ptr + i_MODEL_STRUCT_PTR_OFFSET)>>2] = ptr;
@@ -1119,13 +1141,6 @@ define([
             HEAPF32[(joints_ptr + i * JOINT_STRUCT_SIZE + f_JOINT_ORIENT_2_OFFSET)>>2] = joint.orient[2];
             HEAPF32[(joints_ptr + i * JOINT_STRUCT_SIZE + f_JOINT_ORIENT_3_OFFSET)>>2] = joint.orient[3];
         }
-
-        // Allocate vert Array
-        var vertex_array_ptr = ptr;
-        HEAP32[(header_ptr + i_VERT_ARRAY_PTR_OFFSET)>>2] = ptr;
-        ptr += numOfVerts * VERTEX_STRIDE;
-        this.vertArray = new Float32Array(buffer, vertex_array_ptr, numOfVerts * VERTEX_ELEMENTS);
-        ptr += 4; // padding
         
         var animation_ptr = ptr;
         HEAP32[(header_ptr + i_ANIMATION_STRUCT_PTR_OFFSET)>>2] = ptr;
@@ -1192,6 +1207,7 @@ define([
     };
 
     Md5Mesh.prototype.setAnimation = function(anim) {
+        this.anim = anim;
         this._initializeArrayBufferForAnimation(anim);
     };
         
@@ -1212,10 +1228,6 @@ define([
         } 
 
         this._initializeArrayBuffer();
-
-        this.vertBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.vertBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, this.vertArray, gl.STATIC_DRAW);
         
         // Fill the index buffer
         var indexArray = new Uint16Array(indexBufferLength);
@@ -1229,10 +1241,10 @@ define([
     };
 
     
-    Md5Mesh.prototype.setAnimationFrame = function(gl, animation, frame) {
+    Md5Mesh.prototype.setAnimationFrame = function(gl, frame) {
         getFrameJoints(frame, this.index);
         skin(this.index);
-        this._bindBuffers(gl);
+        //this._bindBuffers(gl);
     };
     
     Md5Mesh.prototype._bindBuffers = function(gl) {
@@ -1241,17 +1253,17 @@ define([
     }
         
     Md5Mesh.prototype.draw =function(gl, shader) {
-        if(!this.vertBuffer || !this.indexBuffer) { return; }
+        if(!vertBuffer || !this.indexBuffer) { return; }
         
         // Bind the appropriate buffers
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.vertBuffer);
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertBuffer);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
 
         var meshes = this.meshes;
         var meshCount = meshes.length;
         for(var i = 0; i < meshCount; ++i) {
             var mesh = meshes[i];
-            var meshOffset = mesh.offset * 4;
+            var meshOffset = mesh.offset * 4 + this.index * VERTEX_STRIDE * VERTEX_NUM;
 
             // Set Textures
             gl.activeTexture(gl.TEXTURE0);
@@ -1288,7 +1300,8 @@ define([
      * Md5Anim
      */
 
-    var Md5Anim = function() {
+    var Md5Anim = function(currentFrame) {
+        this.currentFrame = currentFrame;
         this.frameRate = 24;
         this.frameTime = 1000.0 / this.frameRate;
         this.hierarchy = null;
