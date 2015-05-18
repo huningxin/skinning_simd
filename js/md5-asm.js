@@ -847,7 +847,7 @@ define([
                     vertWeightsIndex = HEAP32[(vertPtr + i_VERT_WEIGHT_INDEX_OFFSET)>>2]|0;
                     vertWeightsCount = HEAP32[(vertPtr + i_VERT_WEIGHT_COUNT_OFFSET)>>2]|0;
                     for (k = 0; (k|0) < (vertWeightsCount|0); k = (k + 1)|0) {
-                        weightPtr = (weightsPtr + imul(k + vertWeightsIndex, WEIGHT_STRUCT_SIZE)|0)|0;
+                        weightPtr = (weightsPtr + imul((k + vertWeightsIndex|0)|0, WEIGHT_STRUCT_SIZE)|0)|0;
                         jointIndex = HEAP32[(weightPtr + i_WEIGHT_JOINT_INDEX_OFFSET)>>2]|0;
                         jointPtr = (jointsPtr + (imul(jointIndex, JOINT_STRUCT_SIZE)|0)|0);
 
@@ -1117,7 +1117,7 @@ define([
                     vertWeightsIndex = HEAP32[(vertPtr + i_VERT_WEIGHT_INDEX_OFFSET)>>2]|0;
                     vertWeightsCount = HEAP32[(vertPtr + i_VERT_WEIGHT_COUNT_OFFSET)>>2]|0;
                     for (k = 0; (k|0) < (vertWeightsCount|0); k = (k + 1)|0) {
-                        weightPtr = (weightsPtr + imul(k + vertWeightsIndex, WEIGHT_STRUCT_SIZE)|0)|0;
+                        weightPtr = (weightsPtr + imul((k + vertWeightsIndex|0)|0, WEIGHT_STRUCT_SIZE)|0)|0;
                         jointIndex = HEAP32[(weightPtr + i_WEIGHT_JOINT_INDEX_OFFSET)>>2]|0;
                         jointPtr = (jointsPtr + (imul(jointIndex, JOINT_STRUCT_SIZE)|0)|0);
 
