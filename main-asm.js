@@ -147,6 +147,26 @@ require([
         gl.uniform3fv(shader.uniform.specularColor, specularColor);
         gl.uniform1f(shader.uniform.shininess, shininess);
 
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertBuffer);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, diffuseMap);
+        gl.uniform1i(shader.uniform.diffuse, 0);
+
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, specularMap);
+        gl.uniform1i(shader.uniform.specular, 1);
+
+        gl.activeTexture(gl.TEXTURE2);
+        gl.bindTexture(gl.TEXTURE_2D, normalMap);
+        gl.uniform1i(shader.uniform.normalMap, 2);
+
+        gl.enableVertexAttribArray(shader.attribute.position);
+        gl.enableVertexAttribArray(shader.attribute.texture);
+        gl.enableVertexAttribArray(shader.attribute.normal);
+        gl.enableVertexAttribArray(shader.attribute.tangent);
+
         for (var i = 0; i < this.models.length; ++i) {
             this.models[i].draw(gl, shader);
         }
@@ -182,7 +202,6 @@ require([
                 var interval = 1000 / anim.frameRate;
                 
                 model.setAnimation(anim);
-
                 if (self.handle === null) {
                     self.handle = setInterval(function() {
                         for (var i = 0; i < self.models.length; ++i) {

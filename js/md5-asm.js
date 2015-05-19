@@ -703,13 +703,20 @@ var skin = asmSkin;
 var vertBuffer = null;
 var vertArray = null;
 
+var indexBuffer = null;
+var indexArray = null;
+
+var diffuseMap = null;
+var specularMap = null;
+var normalMap = null;
+
 function createVertexBuffer(gl, meshCount) {
     if (vertBuffer === null) {
         vertBuffer = gl.createBuffer();
+        vertArray = new Float32Array(buffer, VERTEX_MEMORY_BASE, 10 * VERTEX_NUM * VERTEX_ELEMENTS)
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, vertArray, gl.STATIC_DRAW);
     }
-    vertArray = new Float32Array(buffer, VERTEX_MEMORY_BASE, meshCount * VERTEX_NUM * VERTEX_ELEMENTS)
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, vertArray, gl.STATIC_DRAW);
 }
 
 function bindVertexBuffer(gl) {
@@ -938,6 +945,25 @@ define([
                 }
             });
         }
+
+        if (diffuseMap !== null)
+            return;
+
+        // default
+        diffuseMap = glUtil.createSolidTexture(gl, [200, 200, 200, 255]);
+        specularMap = glUtil.createSolidTexture(gl, [0, 0, 0, 255]);
+        normalMap = glUtil.createSolidTexture(gl, [0, 0, 255, 255]);
+
+        var shader = 'models/monsters/hellknight/hellknight';
+        glUtil.loadTexture(gl, BASE_PATH + shader + '.png', function(texture) {
+            diffuseMap = texture;
+            glUtil.loadTexture(gl, BASE_PATH + shader + '_s.png', function(texture) {
+                specularMap = texture;
+                glUtil.loadTexture(gl, BASE_PATH + shader + '_local.png', function(texture) {
+                    normalMap = texture;
+                });
+            });
+        });
     };
     
     // Finds the meshes texures
@@ -1228,16 +1254,18 @@ define([
         } 
 
         this._initializeArrayBuffer();
-        
+
         // Fill the index buffer
-        var indexArray = new Uint16Array(indexBufferLength);
-        for(i = 0; i < meshes.length; ++i) {
-            var mesh = meshes[i];
-            indexArray.set(mesh.tris, mesh.indexOffset);
+        if (indexBuffer === null) {
+            indexArray = new Uint16Array(indexBufferLength);
+            for(i = 0; i < meshes.length; ++i) {
+                var mesh = meshes[i];
+                indexArray.set(mesh.tris, mesh.indexOffset);
+            }
+            indexBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArray, gl.STATIC_DRAW);
         }
-        this.indexBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArray, gl.STATIC_DRAW);
     };
 
     
@@ -1253,36 +1281,15 @@ define([
     }
         
     Md5Mesh.prototype.draw =function(gl, shader) {
-        if(!vertBuffer || !this.indexBuffer) { return; }
+        if(!vertBuffer || !indexBuffer) { return; }
         
         // Bind the appropriate buffers
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertBuffer);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
 
         var meshes = this.meshes;
         var meshCount = meshes.length;
         for(var i = 0; i < meshCount; ++i) {
             var mesh = meshes[i];
-            var meshOffset = mesh.offset * 4 + this.index * VERTEX_STRIDE * VERTEX_NUM;
-
-            // Set Textures
-            gl.activeTexture(gl.TEXTURE0);
-            gl.bindTexture(gl.TEXTURE_2D, mesh.diffuseMap);
-            gl.uniform1i(shader.uniform.diffuse, 0);
-
-            gl.activeTexture(gl.TEXTURE1);
-            gl.bindTexture(gl.TEXTURE_2D, mesh.specularMap);
-            gl.uniform1i(shader.uniform.specular, 1);
-
-            gl.activeTexture(gl.TEXTURE2);
-            gl.bindTexture(gl.TEXTURE_2D, mesh.normalMap);
-            gl.uniform1i(shader.uniform.normalMap, 2);
-
-            // Enable vertex arrays
-            gl.enableVertexAttribArray(shader.attribute.position);
-            gl.enableVertexAttribArray(shader.attribute.texture);
-            gl.enableVertexAttribArray(shader.attribute.normal);
-            gl.enableVertexAttribArray(shader.attribute.tangent);
+            var meshOffset = mesh.offset * 4 + (this.index % 10) * VERTEX_STRIDE * VERTEX_NUM;
 
             // Draw the mesh
             gl.vertexAttribPointer(shader.attribute.position, 3, gl.FLOAT, false, VERTEX_STRIDE, meshOffset+0);
