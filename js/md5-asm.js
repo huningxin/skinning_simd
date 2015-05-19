@@ -757,24 +757,34 @@ define([
         this.anim = null;
     }; 
 
+
+    var joints = new Array();
+    var meshes = new Array();
+
+    var hierarchy = new Array();
+    var baseFrame = new Array();
+    var frames = new Array();
+
     Md5Mesh.prototype.load = function(gl, url, callback) {
-        this.joints = new Array();
-        this.meshes = new Array();
-        
         var self = this;
-        
-        var request = new XMLHttpRequest();
-        request.addEventListener("load", function() {
-            self._parse(request.responseText);
-            self._initializeTextures(gl, function() {
-                self._initializeBuffers(gl);
-                if(callback) callback(self);
+
+        if (meshes.length == 0) {
+            var request = new XMLHttpRequest();
+            request.addEventListener("load", function() {
+                self._parse(request.responseText);
+                self._initializeTextures(gl, function() {
+                    self._initializeBuffers(gl);
+                    if(callback) callback(self);
+                });
             });
-        });
-        request.open('GET', BASE_PATH + url, true);
-        request.overrideMimeType('text/plain');
-        request.setRequestHeader('Content-Type', 'text/plain');
-        request.send(null);
+            request.open('GET', BASE_PATH + url, true);
+            request.overrideMimeType('text/plain');
+            request.setRequestHeader('Content-Type', 'text/plain');
+            request.send(null);
+        } else {
+            self._initializeBuffers(gl);
+            if(callback) callback(self);
+        }
 
         return this;
     };
@@ -788,7 +798,7 @@ define([
         var jointsOffset = 0;
         src.replace(/joints \{([^}]*)\}/m, function($0, jointSrc) {
             jointSrc.replace(/\"(.+)\"\s(.+) \( (.+) (.+) (.+) \) \( (.+) (.+) (.+) \)/g, function($0, name, parent, x, y, z, ox, oy, oz) {
-                model.joints.push({
+                joints.push({
                     name: name,
                     parent: parseInt(parent), 
                     pos: [parseFloat(x), parseFloat(y), parseFloat(z)], 
@@ -847,12 +857,11 @@ define([
 
             model._compile(mesh);
 
-            model.meshes.push(mesh);
+            meshes.push(mesh);
         });
     };
     
     Md5Mesh.prototype._compile = function(mesh) {
-        var joints = this.joints;
         var rotatedPos = [0, 0, 0];
 
         // Calculate transformed vertices in the bind pose
@@ -930,8 +939,8 @@ define([
     Md5Mesh.prototype._initializeTextures = function(gl, callback) {
         var self = this;
         var mesh_texture_loaded = 0;
-        for(var i = 0; i < this.meshes.length; ++i) {
-            var mesh = this.meshes[i];
+        for(var i = 0; i < meshes.length; ++i) {
+            var mesh = meshes[i];
 
             // Set defaults
             mesh.diffuseMap = glUtil.createSolidTexture(gl, [200, 200, 200, 255]);
@@ -940,7 +949,7 @@ define([
             
             this._loadMeshTextures(gl, mesh, function() {
                 mesh_texture_loaded++;
-                if (mesh_texture_loaded == self.meshes.length) {
+                if (mesh_texture_loaded == meshes.length) {
                     if (callback) callback();
                 }
             });
@@ -1100,16 +1109,16 @@ define([
         var model_ptr = ptr;
         ptr += MODEL_STRUCT_SIZE;
         HEAP32[(model_ptr + i_MODEL_MESHES_PTR_OFFSET)>>2] = 0;
-        HEAP32[(model_ptr + i_MODEL_MESHES_LENGTH_OFFSET)>>2] = model.meshes.length;
+        HEAP32[(model_ptr + i_MODEL_MESHES_LENGTH_OFFSET)>>2] = meshes.length;
         HEAP32[(model_ptr + i_MODEL_JOINTS_PTR_OFFSET)>>2] = 0;
-        HEAP32[(model_ptr + i_MODEL_JOINTS_LENGTH_OFFSET)>>2] = model.joints.length;
+        HEAP32[(model_ptr + i_MODEL_JOINTS_LENGTH_OFFSET)>>2] = joints.length;
         
         // Allocate mesh struct arrays
         HEAP32[(model_ptr + i_MODEL_MESHES_PTR_OFFSET)>>2] = ptr;
         var meshes_ptr = ptr;
-        ptr += MESH_STRUCT_SIZE * model.meshes.length;
-        for(var i = 0; i < model.meshes.length; ++i) {
-            var mesh = model.meshes[i];
+        ptr += MESH_STRUCT_SIZE * meshes.length;
+        for(var i = 0; i < meshes.length; ++i) {
+            var mesh = meshes[i];
         
             HEAP32[(meshes_ptr + i * MESH_STRUCT_SIZE + i_MESH_VERT_OFFSET_OFFSET)>>2] = mesh.offset;
             HEAP32[(meshes_ptr + i * MESH_STRUCT_SIZE + i_MESH_VERTS_PTR_OFFSET)>>2] = 0;
@@ -1155,9 +1164,9 @@ define([
         // Allocate joints
         var joints_ptr = ptr;
         HEAP32[(model_ptr + i_MODEL_JOINTS_PTR_OFFSET)>>2] = ptr;
-        ptr += JOINT_STRUCT_SIZE * model.joints.length;
-        for (var i = 0; i < model.joints.length; ++i) {
-            var joint = this.joints[i];
+        ptr += JOINT_STRUCT_SIZE * joints.length;
+        for (var i = 0; i < joints.length; ++i) {
+            var joint = joints[i];
             HEAPF32[(joints_ptr + i * JOINT_STRUCT_SIZE + f_JOINT_POS_0_OFFSET)>>2] = joint.pos[0];
             HEAPF32[(joints_ptr + i * JOINT_STRUCT_SIZE + f_JOINT_POS_1_OFFSET)>>2] = joint.pos[1];
             HEAPF32[(joints_ptr + i * JOINT_STRUCT_SIZE + f_JOINT_POS_2_OFFSET)>>2] = joint.pos[2];
@@ -1182,28 +1191,28 @@ define([
         // Allocate Animation struct
         ptr = anim_ptr + ANIMATION_STRUCT_SIZE;        
         HEAP32[(anim_ptr + i_ANIMATION_HIERARCHY_PTR_OFFSET)>>2] = 0;
-        HEAP32[(anim_ptr + i_ANIMATION_HIERARCHY_LENGTH_OFFSET)>>2] = anim.hierarchy.length;
+        HEAP32[(anim_ptr + i_ANIMATION_HIERARCHY_LENGTH_OFFSET)>>2] = hierarchy.length;
         HEAP32[(anim_ptr + i_ANIMATION_BASEFRAME_PTR_OFFSET)>>2] = 0;
-        HEAP32[(anim_ptr + i_ANIMATION_BASEFRAME_LENGTH_OFFSET)>>2] = anim.baseFrame.length;
+        HEAP32[(anim_ptr + i_ANIMATION_BASEFRAME_LENGTH_OFFSET)>>2] = baseFrame.length;
         HEAP32[(anim_ptr + i_ANIMATION_FRAMES_PTR_OFFSET)>>2] = 0;
-        HEAP32[(anim_ptr + i_ANIMATION_FRAMES_LENGTH_OFFSET)>>2] = anim.frames.length;
+        HEAP32[(anim_ptr + i_ANIMATION_FRAMES_LENGTH_OFFSET)>>2] = frames.length;
 
         // Allocate Hierarchy array
         HEAP32[(anim_ptr + i_ANIMATION_HIERARCHY_PTR_OFFSET)>>2] = ptr;
         var hierarchy_array_ptr = ptr;
-        ptr += anim.hierarchy.length * HIERARCHY_STRUCT_SIZE;
-        for (var i = 0; i < anim.hierarchy.length; ++i) {
-            var hierarchy = anim.hierarchy[i];
-            HEAP32[(hierarchy_array_ptr + i * HIERARCHY_STRUCT_SIZE + i_HIERARCHY_PARENT_OFFSET)>>2] = hierarchy.parent;
-            HEAP32[(hierarchy_array_ptr + i * HIERARCHY_STRUCT_SIZE + i_HIERARCHY_FLAGS_OFFSET)>>2] = hierarchy.flags;
-            HEAP32[(hierarchy_array_ptr + i * HIERARCHY_STRUCT_SIZE + i_HIERARCHY_INDEX_OFFSET)>>2] = hierarchy.index;
+        ptr += hierarchy.length * HIERARCHY_STRUCT_SIZE;
+        for (var i = 0; i < hierarchy.length; ++i) {
+            var h = hierarchy[i];
+            HEAP32[(hierarchy_array_ptr + i * HIERARCHY_STRUCT_SIZE + i_HIERARCHY_PARENT_OFFSET)>>2] = h.parent;
+            HEAP32[(hierarchy_array_ptr + i * HIERARCHY_STRUCT_SIZE + i_HIERARCHY_FLAGS_OFFSET)>>2] = h.flags;
+            HEAP32[(hierarchy_array_ptr + i * HIERARCHY_STRUCT_SIZE + i_HIERARCHY_INDEX_OFFSET)>>2] = h.index;
         }
         // Allocate BaseFrame array
         HEAP32[(anim_ptr + i_ANIMATION_BASEFRAME_PTR_OFFSET)>>2] = ptr;
         var baseframe_array_ptr = ptr;
-        ptr += anim.baseFrame.length * BASEFRAME_STRUCT_SIZE;
-        for (var i = 0; i < anim.baseFrame.length; ++i) {
-            var baseframe = anim.baseFrame[i];
+        ptr += baseFrame.length * BASEFRAME_STRUCT_SIZE;
+        for (var i = 0; i < baseFrame.length; ++i) {
+            var baseframe = baseFrame[i];
             HEAPF32[(baseframe_array_ptr + i * BASEFRAME_STRUCT_SIZE + f_BASEFRAME_POS_0_OFFSET)>>2] = baseframe.pos[0];
             HEAPF32[(baseframe_array_ptr + i * BASEFRAME_STRUCT_SIZE + f_BASEFRAME_POS_1_OFFSET)>>2] = baseframe.pos[1];
             HEAPF32[(baseframe_array_ptr + i * BASEFRAME_STRUCT_SIZE + f_BASEFRAME_POS_2_OFFSET)>>2] = baseframe.pos[2];
@@ -1216,17 +1225,17 @@ define([
         // Allocate Frames array
         HEAP32[(anim_ptr + i_ANIMATION_FRAMES_PTR_OFFSET)>>2] = ptr;
         var frames_array_ptr = ptr;
-        ptr += anim.frames.length * FRAMES_STRUCT_SIZE;
-        for (var i = 0; i < anim.frames.length; ++i) {
-            var frames = anim.frames[i];
+        ptr += frames.length * FRAMES_STRUCT_SIZE;
+        for (var i = 0; i < frames.length; ++i) {
+            var f = frames[i];
             HEAP32[(frames_array_ptr + i * FRAMES_STRUCT_SIZE +  i_FRAMES_PTR_OFFSET)>>2] = 0;
-            HEAP32[(frames_array_ptr + i * FRAMES_STRUCT_SIZE +  i_FRAMES_LENGTH_OFFSET)>>2] = frames.length;
+            HEAP32[(frames_array_ptr + i * FRAMES_STRUCT_SIZE +  i_FRAMES_LENGTH_OFFSET)>>2] = f.length;
             // Allocate Frame array
             HEAP32[(frames_array_ptr + i * FRAMES_STRUCT_SIZE +  i_FRAMES_PTR_OFFSET)>>2] = ptr;
             var frames_ptr = ptr;
-            ptr += frames.length * FRAME_STRUCT_SIZE;
-            for (var j = 0; j < frames.length; ++j) {
-                HEAPF32[(frames_ptr + j * FRAME_STRUCT_SIZE + f_FRAME_VALUE_OFFSET)>>2] = frames[j];       
+            ptr += f.length * FRAME_STRUCT_SIZE;
+            for (var j = 0; j < f.length; ++j) {
+                HEAPF32[(frames_ptr + j * FRAME_STRUCT_SIZE + f_FRAME_VALUE_OFFSET)>>2] = f[j];       
             }
         }
         this.end = ptr;
@@ -1239,7 +1248,6 @@ define([
         
     // Creates the model's gl buffers and populates them with the bind-pose mesh
     Md5Mesh.prototype._initializeBuffers = function(gl) {
-        var meshes = this.meshes;
         var i;
         
         var vertBufferLength = 0;
@@ -1285,7 +1293,6 @@ define([
         
         // Bind the appropriate buffers
 
-        var meshes = this.meshes;
         var meshCount = meshes.length;
         for(var i = 0; i < meshCount; ++i) {
             var mesh = meshes[i];
@@ -1317,22 +1324,22 @@ define([
     };
         
     Md5Anim.prototype.load = function(url, callback) {
-        this.hierarchy = new Array();
-        this.baseFrame = new Array();
-        this.frames = new Array();
-        
-        var self = this;
-        
-        var request = new XMLHttpRequest();
-        request.addEventListener("load", function() {
-            self._parse(request.responseText);
-            if(callback) { callback(self); }
-        });
-        
-        request.open('GET', BASE_PATH + url, true);
-        request.overrideMimeType('text/plain');
-        request.setRequestHeader('Content-Type', 'text/plain');
-        request.send(null);
+        if (hierarchy.length === 0) {        
+            var self = this;
+            
+            var request = new XMLHttpRequest();
+            request.addEventListener("load", function() {
+                self._parse(request.responseText);
+                if(callback) { callback(self); }
+            });
+            
+            request.open('GET', BASE_PATH + url, true);
+            request.overrideMimeType('text/plain');
+            request.setRequestHeader('Content-Type', 'text/plain');
+            request.send(null);
+        } else {
+            if(callback) { callback(this); }
+        }
 
         return this;
     };
@@ -1347,7 +1354,7 @@ define([
 
         src.replace(/hierarchy \{([^}]*)\}/m, function($0, hierarchySrc) {
             hierarchySrc.replace(/\"(.+)\"\s([-\d]+) (\d+) (\d+)\s/g, function($0, name, parent, flags, index) {
-                anim.hierarchy.push({
+                hierarchy.push({
                     name: name,
                     parent: parseInt(parent), 
                     flags: parseInt(flags), 
@@ -1359,7 +1366,7 @@ define([
         src.replace(/baseframe \{([^}]*)\}/m, function($0, baseframeSrc) {
             var offset = 0;
             baseframeSrc.replace(/\( (.+) (.+) (.+) \) \( (.+) (.+) (.+) \)/g, function($0, x, y, z, ox, oy, oz) {
-                anim.baseFrame.push({
+                baseFrame.push({
                     pos: [parseFloat(x), parseFloat(y), parseFloat(z)], 
                     orient: [parseFloat(ox), parseFloat(oy), parseFloat(oz)]
                 });
@@ -1375,7 +1382,7 @@ define([
                 frame.push(parseFloat(value));
             });
 
-            anim.frames.push(frame);
+            frames.push(frame);
         });
     };
 
