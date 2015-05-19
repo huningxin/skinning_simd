@@ -349,11 +349,6 @@ var MeshAdjuster = function (renderer, gl, stats) {
     var gl = gl;
     var stats = stats;
     var targetFps = 60.0;
-    var meetTarget = 0;
-    var missTarget = 0;
-    var unstable = 0;
-    var meetNumber = 1;
-    var missNumber = 3;
     var max = renderer.meshCount;
     var min = renderer.meshCount;
     var handle = null;
@@ -361,58 +356,15 @@ var MeshAdjuster = function (renderer, gl, stats) {
     var reset = function(fps) {
         //console.log(fps);
         targetFps = fps;
-        meetTarget = 0;
-        missTarget = 0;
-        meetNumber = 1;
-        missNumber = 1;
-        max = renderer.meshCount;
-        min = renderer.meshCount;
     };
 
     var start = function() {
         handle = setInterval(function() {
-            if (unstable > 0) {
-                unstable--;
-                return;
-            }
             var fps = stats.getFps();
             if (fps >= targetFps) {
-                meetTarget++;
-                if (missTarget > 0)
-                    missTarget--;
-            } else {
-                missTarget++;
-                if (meetTarget > 0)
-                    meetTarget--;
-            }
-
-            //console.log(fps, targetFps, renderer.meshCount, min, max, meetTarget, meetNumber, missTarget, missNumber);
-
-            if (max < renderer.meshCount) {
-                //console.log('reset meetNumber.');
-                max = renderer.meshCount;
-                meetNumber = 1;
-            }
-
-            if (min > renderer.meshCount) {
-                //console.log('reset missNumber.');
-                min = renderer.meshCount;
-                missNumber = 1;
-            }
-
-            if (meetTarget >= meetNumber && missTarget == 0) {
                 renderer.addMesh(gl);
-                meetNumber+=1;
-                //console.log('addMesh');
-                meetTarget = 0;
-            }
-
-            if (missTarget >= missNumber && meetTarget == 0) {
+            } else {
                 renderer.removeMesh(gl);
-                unstable = 1;
-                missNumber+=1;
-                //console.log('removeMesh');
-                missTarget = 0;
             }
         }, 1000);
     }
