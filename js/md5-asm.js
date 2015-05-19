@@ -710,10 +710,12 @@ var diffuseMap = null;
 var specularMap = null;
 var normalMap = null;
 
+var MAX_VERTEX_NUM = 25;
+
 function createVertexBuffer(gl, meshCount) {
     if (vertBuffer === null) {
         vertBuffer = gl.createBuffer();
-        vertArray = new Float32Array(buffer, VERTEX_MEMORY_BASE, 10 * VERTEX_NUM * VERTEX_ELEMENTS)
+        vertArray = new Float32Array(buffer, VERTEX_MEMORY_BASE, MAX_VERTEX_NUM * VERTEX_NUM * VERTEX_ELEMENTS)
         gl.bindBuffer(gl.ARRAY_BUFFER, vertBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, vertArray, gl.STATIC_DRAW);
     }
@@ -1296,7 +1298,7 @@ define([
         var meshCount = meshes.length;
         for(var i = 0; i < meshCount; ++i) {
             var mesh = meshes[i];
-            var meshOffset = mesh.offset * 4 + (this.index % 10) * VERTEX_STRIDE * VERTEX_NUM;
+            var meshOffset = mesh.offset * 4 + (this.index % MAX_VERTEX_NUM) * VERTEX_STRIDE * VERTEX_NUM;
 
             // Draw the mesh
             gl.vertexAttribPointer(shader.attribute.position, 3, gl.FLOAT, false, VERTEX_STRIDE, meshOffset+0);
