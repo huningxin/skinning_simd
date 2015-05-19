@@ -94,6 +94,8 @@ require([
     var shininess = 8;
     var meshIndex = 0;
 
+    var meshNumber = document.getElementById("meshes");
+
     var Renderer = function (gl, canvas) {
         this.camera = new Camera.OrbitCamera(canvas);
         this.camera.setCenter([0, 0, 64]);
@@ -112,11 +114,27 @@ require([
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
         
         this.handle = null;
+        this.meshCount = 0;
         this.animations = [];
         this.meshShader = GLUtil.createProgram(gl, meshVS, meshFS);
         this.models = [];
         this.isLoading = false;
-        this.addMesh(gl);
+        this.allocateMeshes(gl, 128);
+        if (this.handle === null) {
+            var interval = 1000 / 24;
+            var self = this;
+            this.handle = setInterval(function() {
+                for (var i = 0; i < self.meshCount; ++i) {
+                    var model = self.models[i];
+                    var anim = model.anim;
+                    if (anim !== null) {
+                        anim.currentFrame++;
+                        model.setAnimationFrame(gl, anim.currentFrame);
+                    }
+                }
+                bindVertexBuffer(gl);
+            }, interval);
+        }
     };
 
     Renderer.prototype.resize = function (gl, canvas) {
@@ -167,12 +185,26 @@ require([
         gl.enableVertexAttribArray(shader.attribute.normal);
         gl.enableVertexAttribArray(shader.attribute.tangent);
 
-        for (var i = 0; i < this.models.length; ++i) {
+        for (var i = 0; i < this.meshCount; ++i) {
             this.models[i].draw(gl, shader);
         }
     };
 
     Renderer.prototype.addMesh = function(gl) {
+        if (this.meshCount == 128)
+            return;
+        this.meshCount++;
+        meshNumber.innerHTML = this.meshCount;
+    }
+
+    Renderer.prototype.removeMesh = function(gl) {
+        if (this.meshCount == 1)
+            return;
+        this.meshCount--;
+        meshNumber.innerHTML = this.meshCount;
+    }
+
+    Renderer.prototype.allocateMeshes = function(gl, count) {
         var self = this;
         var model = new MD5.Md5Mesh(meshIndex++);
         if (autoAdjust && useSimd)
@@ -194,34 +226,25 @@ require([
                 loading.style.visibility = 'hidden';
             }
 
-            meshNumber.innerHTML = self.models.length;
+            //meshNumber.innerHTML = self.models.length;
 
             var currentFrame = Math.round(Math.random() * 120);
             var anim = new MD5.Md5Anim(currentFrame);
             anim.load('models/md5/monsters/hellknight/idle2.md5anim', function(anim) {
-                var interval = 1000 / anim.frameRate;
-                
                 model.setAnimation(anim);
-                if (self.handle === null) {
-                    self.handle = setInterval(function() {
-                        for (var i = 0; i < self.models.length; ++i) {
-                            var model = self.models[i];
-                            var anim = model.anim;
-                            if (anim !== null) {
-                                anim.currentFrame++;
-                                model.setAnimationFrame(gl, anim.currentFrame);
-                            }
-                        }
-                        bindVertexBuffer(gl);
-                    }, interval);
-                }
-
                 self.animations.push(anim);
+                if (self.models.length == count) {
+                    // start
+                    self.addMesh(gl);
+                    return;
+                }
+                var func = self.allocateMeshes.bind(self, gl, count);
+                setTimeout(func, 0);
             });
         });
     };
 
-    Renderer.prototype.removeMesh = function(gl) {
+    Renderer.prototype.destoryMesh = function(gl) {
         if (this.models.length == 1) {
             //console.log('Only 1 model');
             return;
@@ -230,7 +253,7 @@ require([
         this.animations.pop();
         this.models.pop();
         createVertexBuffer(gl, this.models.length);
-        meshNumber.innerHTML = this.models.length;
+        //meshNumber.innerHTML = this.models.length;
     }
 
     // Setup the canvas and GL context, initialize the scene 
@@ -251,7 +274,7 @@ require([
         renderer.removeMesh(contextHelper.gl);
     });
 
-    var meshNumber = document.getElementById("meshes");
+    
 
     var simdBtn = document.getElementById("simdBtn");
     if (typeof SIMD === "undefined") {
@@ -331,8 +354,8 @@ var MeshAdjuster = function (renderer, gl, stats) {
     var unstable = 0;
     var meetNumber = 1;
     var missNumber = 3;
-    var max = renderer.models.length;
-    var min = renderer.models.length;
+    var max = renderer.meshCount;
+    var min = renderer.meshCount;
     var handle = null;
 
     var reset = function(fps) {
@@ -342,8 +365,8 @@ var MeshAdjuster = function (renderer, gl, stats) {
         missTarget = 0;
         meetNumber = 1;
         missNumber = 1;
-        max = renderer.models.length;
-        min = renderer.models.length;
+        max = renderer.meshCount;
+        min = renderer.meshCount;
     };
 
     var start = function() {
@@ -363,17 +386,17 @@ var MeshAdjuster = function (renderer, gl, stats) {
                     meetTarget--;
             }
 
-            //console.log(fps, targetFps, renderer.models.length, min, max, meetTarget, meetNumber, missTarget, missNumber);
+            //console.log(fps, targetFps, renderer.meshCount, min, max, meetTarget, meetNumber, missTarget, missNumber);
 
-            if (max < renderer.models.length) {
+            if (max < renderer.meshCount) {
                 //console.log('reset meetNumber.');
-                max = renderer.models.length;
+                max = renderer.meshCount;
                 meetNumber = 1;
             }
 
-            if (min > renderer.models.length) {
+            if (min > renderer.meshCount) {
                 //console.log('reset missNumber.');
-                min = renderer.models.length;
+                min = renderer.meshCount;
                 missNumber = 1;
             }
 
