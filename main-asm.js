@@ -101,7 +101,7 @@ require([
         this.camera.setCenter([0, 0, 64]);
         this.camera.orbit(-Math.PI * 0.5, 0);
         this.camera.maxDistance = 1024;
-        this.camera.setDistance(800);
+        this.camera.setDistance(390);
         this.camera.minDistance = 32;
         
         this.projectionMat = mat4.create();
@@ -214,7 +214,7 @@ require([
             var x = 0;
             var y = 0;
             if (self.models.length != 0) {
-                x = 200 - Math.random() * 400;
+                x = 0 - Math.random() * 400;
                 y = 200 - Math.random() * 400;
             }
             mesh.pos = vec3.create([x, y, 0.0]);
