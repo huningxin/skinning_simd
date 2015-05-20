@@ -100,7 +100,8 @@ require([
         this.camera = new Camera.OrbitCamera(canvas);
         this.camera.setCenter([0, 0, 64]);
         this.camera.orbit(-Math.PI * 0.5, 0);
-        this.camera.setDistance(390);
+        this.camera.maxDistance = 1024;
+        this.camera.setDistance(800);
         this.camera.minDistance = 32;
         
         this.projectionMat = mat4.create();
@@ -119,7 +120,7 @@ require([
         this.meshShader = GLUtil.createProgram(gl, meshVS, meshFS);
         this.models = [];
         this.isLoading = false;
-        this.allocateMeshes(gl, 128);
+        this.allocateMeshes(gl, 200);
         if (this.handle === null) {
             var interval = 1000 / 24;
             var self = this;
@@ -191,7 +192,7 @@ require([
     };
 
     Renderer.prototype.addMesh = function(gl) {
-        if (this.meshCount == 128)
+        if (this.meshCount == 200)
             return;
         this.meshCount++;
         meshNumber.innerHTML = this.meshCount;

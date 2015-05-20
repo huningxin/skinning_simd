@@ -26,11 +26,11 @@
  *    distribution.
  */
 
-var buffer = new ArrayBuffer(128 * 512 * 1024);
+var buffer = new ArrayBuffer(200 * 512 * 1024);
 var MESH_MEMORY_SIZE = 302556;
 var VERTEX_ELEMENTS = 11; // 3 Pos, 2 UV, 3 Norm, 3 Tangent
 var VERTEX_STRIDE = 44;
-var VERTEX_MEMORY_BASE = 38727168; // MESH_MEMORY_SIZE * 128
+var VERTEX_MEMORY_BASE = 60511200; // MESH_MEMORY_SIZE * 128
 var VERTEX_NUM = 1737;
 var VERTEX_MEMORY_SIZE = 76428; // VERTEX_NUM * VERTEX_ELEMENTS * 4
 
