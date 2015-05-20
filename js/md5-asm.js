@@ -710,7 +710,7 @@ var diffuseMap = null;
 var specularMap = null;
 var normalMap = null;
 
-var MAX_VERTEX_NUM = 25;
+var MAX_VERTEX_NUM = 10;
 
 function createVertexBuffer(gl, meshCount) {
     if (vertBuffer === null) {
