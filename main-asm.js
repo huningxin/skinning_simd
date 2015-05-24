@@ -353,19 +353,41 @@ var MeshAdjuster = function (renderer, gl, stats) {
     var max = renderer.meshCount;
     var min = renderer.meshCount;
     var handle = null;
-
+    var marginFpsDec1 = 5.0;
+    var marginFpsDec5 = 10.0;
+    var marginFpsInc1 = 2.0;
+    var marginFpsInc5 = 1.0;
     var reset = function(fps) {
         //console.log(fps);
         targetFps = fps;
     };
 
+    function addMeshCount(count) {
+      for (var i = 0; i < count; ++i) {
+        renderer.addMesh(gl)
+      }
+    }
+
+    function removeMeshCount(count) {
+      for (var i = 0; i < count; ++i) {
+        renderer.removeMesh(gl)
+      }
+    }
+
     var start = function() {
         handle = setInterval(function() {
             var fps = stats.getFps();
-            if (fps >= targetFps) {
-                renderer.addMesh(gl);
-            } else {
-                renderer.removeMesh(gl);
+            if (fps >= targetFps - marginFpsInc5) {
+              addMeshCount(5);
+            }
+            else if (fps >= targetFps - marginFpsInc1) {
+              addMeshCount(1);
+            }
+            else if (fps < targetFps - marginFpsDec5) {
+              removeMeshCount(5);
+            }
+            else if (fps < targetFps - marginFpsDec1) {
+              renderer.removeMesh(gl);
             }
         }, 1000);
     }
