@@ -263,19 +263,21 @@ require([
     var renderer = new Renderer(contextHelper.gl, canvas);
 
     var stats = new Stats();
-    document.getElementById("content").appendChild(stats.domElement);
+    document.getElementById("fpsMeter").appendChild(stats.domElement);
 
     var addBtn = document.getElementById("addBtn");
-    addBtn.addEventListener("click", function() {
+    if (addBtn) {
+      addBtn.addEventListener("click", function () {
         renderer.addMesh(contextHelper.gl);
-    });
+      });
+    }
 
     var removeBtn = document.getElementById("removeBtn");
-    removeBtn.addEventListener("click", function() {
+    if (removeBtn) {
+      removeBtn.addEventListener("click", function () {
         renderer.removeMesh(contextHelper.gl);
-    });
-
-    
+      });
+    }
 
     var simdBtn = document.getElementById("simdBtn");
     if (typeof SIMD === "undefined") {
@@ -301,30 +303,38 @@ require([
         MD5.setSIMD(useSimd);
     });
 
-    var adjuster = new MeshAdjuster(renderer, contextHelper.gl, stats);
+    var adjuster = MeshAdjuster(renderer, contextHelper.gl, stats);
 
     var autoBtn = document.getElementById("autoBtn");
     var autoBtnLabel = document.getElementById("autoBtnLable");
     var autoAdjust = false;
-    addBtn.disabled = false;
-    removeBtn.disabled = false;
+    if (addBtn) addBtn.disabled = false;
+    if (removeBtn) removeBtn.disabled = false;
 
     autoBtn.addEventListener("click", function() {
         if (!autoAdjust) {
             autoAdjust = true;
-            addBtn.disabled = true;
-            addBtn.classList.add("btn-disable");
-            removeBtn.disabled = true;
-            removeBtn.classList.add("btn-disable");
+            if (addBtn) {
+                addBtn.disabled = true;
+                addBtn.classList.add("btn-disable");
+            }
+            if (removeBtn) {
+                removeBtn.disabled = true;
+                removeBtn.classList.add("btn-disable");
+            }
             adjuster.reset(parseInt(targetFps.value));
             adjuster.start();
             autoBtnLabel.innerHTML = 'Stop';
         } else {
             autoAdjust = false;
-            addBtn.disabled = false;
-            addBtn.classList.remove("btn-disable");
-            removeBtn.disabled = false;
-            removeBtn.classList.remove("btn-disable");
+            if (addBtn) {
+                addBtn.disabled = false;
+                addBtn.classList.remove("btn-disable");
+            }
+            if (removeBtn) {
+                removeBtn.disabled = false;
+                removeBtn.classList.remove("btn-disable");
+            }
             adjuster.stop();
             autoBtnLabel.innerHTML = 'Start';
         }
@@ -353,19 +363,41 @@ var MeshAdjuster = function (renderer, gl, stats) {
     var max = renderer.meshCount;
     var min = renderer.meshCount;
     var handle = null;
-
+    var marginFpsDec1 = 5.0;
+    var marginFpsDec5 = 10.0;
+    var marginFpsInc1 = 2.0;
+    var marginFpsInc5 = 1.0;
     var reset = function(fps) {
         //console.log(fps);
         targetFps = fps;
     };
 
+    function addMeshCount(count) {
+      for (var i = 0; i < count; ++i) {
+        renderer.addMesh(gl)
+      }
+    }
+
+    function removeMeshCount(count) {
+      for (var i = 0; i < count; ++i) {
+        renderer.removeMesh(gl)
+      }
+    }
+
     var start = function() {
         handle = setInterval(function() {
             var fps = stats.getFps();
-            if (fps >= targetFps) {
-                renderer.addMesh(gl);
-            } else {
-                renderer.removeMesh(gl);
+            if (fps >= targetFps - marginFpsInc5) {
+              addMeshCount(5);
+            }
+            else if (fps >= targetFps - marginFpsInc1) {
+              addMeshCount(1);
+            }
+            else if (fps < targetFps - marginFpsDec5) {
+              removeMeshCount(5);
+            }
+            else if (fps < targetFps - marginFpsDec1) {
+              renderer.removeMesh(gl);
             }
         }, 1000);
     }
