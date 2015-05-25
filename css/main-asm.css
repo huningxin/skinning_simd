@@ -39,16 +39,11 @@
 
 .author0 {
   font-size:8pt;
-  position:absolute;
-  bottom:0px;
-  right:0;
-}
-
-.author1 {
-  font-size:8pt;
-  position:absolute;
-  bottom:-15px;
-  right:0;
+  position:relative;
+  margin: auto;
+  margin-top: 300px;
+  width: 500px;
+  text-align:right;
 }
 
 .btn-primary:hover, .btn-primary:focus, .btn-primary:active, .btn-primary.active, .open .dropdown-toggle.btn-primary {
@@ -113,11 +108,24 @@ body {
     background-color: #330000; /* Will display red background if something went wrong during context creation */
 }
 
+#fpsMeter {
+  position: relative;
+  margin:auto;
+  margin-top: -350px;
+  width:500px;
+}
+
+#fpsMeter * {
+  position:relative;
+}
+
+/*
 #stats {
     position: absolute;
     top: 5px;
     left: -15px;
 }
+*/
 
 #targetFpsInput {
   font-size: 18px;
