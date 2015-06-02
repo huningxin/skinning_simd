@@ -569,12 +569,12 @@ function _asmjsModuleSIMD (global, imp, buffer) {
             vertWeightsIndex = 0, weightPtr = 0, jointPtr = 0, vertexPtr = 0,
             jointIndex = 0, meshOffset = 0;
             
-        var rotatedPos = SIMD_float32x4(0, 0, 0, 0), jointOrient = SIMD_float32x4(0, 0, 0, 0),
-            weightPos = SIMD_float32x4(0, 0, 0, 0), ix4 = SIMD_float32x4(0, 0, 0, 0),
-            jointPos = SIMD_float32x4(0, 0, 0, 0), weightBias = SIMD_float32x4(0, 0, 0, 0),
-            vx4 = SIMD_float32x4(0, 0, 0, 0), weightNormal = SIMD_float32x4(0, 0, 0, 0),
-            nx4 = SIMD_float32x4(0, 0, 0, 0), weightTangent = SIMD_float32x4(0, 0, 0, 0),
-            tempx4 = SIMD_float32x4(1, 1, 1, -1), tx4 = SIMD_float32x4(0, 0, 0, 0);
+        var rotatedPos = SIMD_float32x4(0.0, 0.0, 0.0, 0.0), jointOrient = SIMD_float32x4(0.0, 0.0, 0.0, 0.0),
+            weightPos = SIMD_float32x4(0.0, 0.0, 0.0, 0.0), ix4 = SIMD_float32x4(0.0, 0.0, 0.0, 0.0),
+            jointPos = SIMD_float32x4(0.0, 0.0, 0.0, 0.0), weightBias = SIMD_float32x4(0.0, 0.0, 0.0, 0.0),
+            vx4 = SIMD_float32x4(0.0, 0.0, 0.0, 0.0), weightNormal = SIMD_float32x4(0.0, 0.0, 0.0, 0.0),
+            nx4 = SIMD_float32x4(0.0, 0.0, 0.0, 0.0), weightTangent = SIMD_float32x4(0.0, 0.0, 0.0, 0.0),
+            tempx4 = SIMD_float32x4(1.0, 1.0, 1.0, -1.0), tx4 = SIMD_float32x4(0.0, 0.0, 0.0, 0.0);
             
         headerPtr = (HEAP_BASE + (imul(meshIndex, MESH_MEMORY_SIZE)|0))|0;
         modelPtr = HEAP32[(headerPtr + i_MODEL_STRUCT_PTR_OFFSET)>>2]|0;
