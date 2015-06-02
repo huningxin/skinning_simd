@@ -26,7 +26,7 @@
  *    distribution.
  */
 
-var buffer = new ArrayBuffer(200 * 512 * 1024);
+var buffer = new ArrayBuffer(0x7000000);
 var MESH_MEMORY_SIZE = 302556;
 var VERTEX_ELEMENTS = 11; // 3 Pos, 2 UV, 3 Norm, 3 Tangent
 var VERTEX_STRIDE = 44;
