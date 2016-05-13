@@ -438,7 +438,7 @@ function _asmjsModuleSIMD (global, imp, buffer) {
     var toF = global.Math.fround;
     var sqrt = global.Math.sqrt;
     var abs = global.Math.abs;
-    var SIMD_float32x4 = global.SIMD.float32x4;
+    var SIMD_float32x4 = global.SIMD.Float32x4;
     var SIMD_float32x4_load = SIMD_float32x4.load;
     var SIMD_float32x4_store = SIMD_float32x4.store;
     var SIMD_float32x4_mul = SIMD_float32x4.mul;
