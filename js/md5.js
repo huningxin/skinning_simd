@@ -320,7 +320,7 @@ define([
         }
         
         // Fill the vertex buffer
-        // Append 1 byte for using SIMD.float32x4.store.
+        // Append 1 byte for using SIMD.Float32x4.store.
         this.vertArray = new Float32Array(vertBufferLength + 1);
         if (!useSIMD)
             this._skin();
@@ -422,8 +422,8 @@ define([
         if(!vertArray) { vertArray = this.vertArray }
         if(!arrayOffset) { arrayOffset = 0; }
 
-        var rotatedPos = SIMD.float32x4.splat(0);
-        var tempx4 = SIMD.float32x4(1, 1, 1, -1);
+        var rotatedPos = SIMD.Float32x4.splat(0);
+        var tempx4 = SIMD.Float32x4(1, 1, 1, -1);
         
         var meshes = this.meshes;
         
@@ -436,9 +436,9 @@ define([
                 var vertOffset = (j * VERTEX_ELEMENTS) + meshOffset;
                 var vert = mesh.verts[j];
 
-                var vx4 = SIMD.float32x4.splat(0);
-                var nx4 = SIMD.float32x4.splat(0);
-                var tx4 = SIMD.float32x4.splat(0);
+                var vx4 = SIMD.Float32x4.splat(0);
+                var nx4 = SIMD.Float32x4.splat(0);
+                var tx4 = SIMD.Float32x4.splat(0);
 
                 for (var k = 0; k < vert.weight.count; ++k) {
                     var weight = mesh.weights[vert.weight.index + k];
@@ -446,79 +446,79 @@ define([
                     var weightsOffset = (vert.weight.index + k) * 13;
 
                     // Rotate position
-                    var jointOrient = SIMD.float32x4.load(jointsData, weight.joint * 8 + 4);
-                    var weightPos = SIMD.float32x4.load(weigthsData, weightsOffset + 1);
-                    var ix4 = SIMD.float32x4.sub(
-                        SIMD.float32x4.add(
-                            SIMD.float32x4.mul(SIMD.float32x4.mul(SIMD.float32x4.swizzle(jointOrient, 3, 3, 3, 0), tempx4),
-                                               SIMD.float32x4.swizzle(weightPos, 0, 1, 2, 0)),
-                            SIMD.float32x4.mul(SIMD.float32x4.mul(SIMD.float32x4.swizzle(jointOrient, 1, 2, 0, 1), tempx4),
-                                               SIMD.float32x4.swizzle(weightPos, 2, 0, 1, 1))),
-                        SIMD.float32x4.mul(SIMD.float32x4.swizzle(jointOrient, 2, 0, 1, 2),
-                                           SIMD.float32x4.swizzle(weightPos, 1, 2, 0, 2)));
+                    var jointOrient = SIMD.Float32x4.load(jointsData, weight.joint * 8 + 4);
+                    var weightPos = SIMD.Float32x4.load(weigthsData, weightsOffset + 1);
+                    var ix4 = SIMD.Float32x4.sub(
+                        SIMD.Float32x4.add(
+                            SIMD.Float32x4.mul(SIMD.Float32x4.mul(SIMD.Float32x4.swizzle(jointOrient, 3, 3, 3, 0), tempx4),
+                                               SIMD.Float32x4.swizzle(weightPos, 0, 1, 2, 0)),
+                            SIMD.Float32x4.mul(SIMD.Float32x4.mul(SIMD.Float32x4.swizzle(jointOrient, 1, 2, 0, 1), tempx4),
+                                               SIMD.Float32x4.swizzle(weightPos, 2, 0, 1, 1))),
+                        SIMD.Float32x4.mul(SIMD.Float32x4.swizzle(jointOrient, 2, 0, 1, 2),
+                                           SIMD.Float32x4.swizzle(weightPos, 1, 2, 0, 2)));
 
-                    var rotatedPos = SIMD.float32x4.add(
-                        SIMD.float32x4.sub(SIMD.float32x4.mul(ix4, SIMD.float32x4.swizzle(jointOrient, 3, 3, 3, 0)),
-                                           SIMD.float32x4.mul(SIMD.float32x4.swizzle(ix4, 3, 3, 3, 0), jointOrient)),
-                        SIMD.float32x4.sub(SIMD.float32x4.mul(SIMD.float32x4.swizzle(ix4, 2, 0, 1, 0), SIMD.float32x4.swizzle(jointOrient, 1, 2, 0, 0)),
-                                           SIMD.float32x4.mul(SIMD.float32x4.swizzle(ix4, 1, 2, 0, 0), SIMD.float32x4.swizzle(jointOrient, 2, 0, 1, 0))));
+                    var rotatedPos = SIMD.Float32x4.add(
+                        SIMD.Float32x4.sub(SIMD.Float32x4.mul(ix4, SIMD.Float32x4.swizzle(jointOrient, 3, 3, 3, 0)),
+                                           SIMD.Float32x4.mul(SIMD.Float32x4.swizzle(ix4, 3, 3, 3, 0), jointOrient)),
+                        SIMD.Float32x4.sub(SIMD.Float32x4.mul(SIMD.Float32x4.swizzle(ix4, 2, 0, 1, 0), SIMD.Float32x4.swizzle(jointOrient, 1, 2, 0, 0)),
+                                           SIMD.Float32x4.mul(SIMD.Float32x4.swizzle(ix4, 1, 2, 0, 0), SIMD.Float32x4.swizzle(jointOrient, 2, 0, 1, 0))));
 
-                    var jointPos = SIMD.float32x4.load(jointsData, weight.joint * 8);
-                    var weightBias = SIMD.float32x4.swizzle(SIMD.float32x4.load(weigthsData, weightsOffset), 0, 0, 0, 0);
+                    var jointPos = SIMD.Float32x4.load(jointsData, weight.joint * 8);
+                    var weightBias = SIMD.Float32x4.swizzle(SIMD.Float32x4.load(weigthsData, weightsOffset), 0, 0, 0, 0);
 
                     // Translate position
-                    vx4 = SIMD.float32x4.add(vx4, SIMD.float32x4.mul(SIMD.float32x4.add(jointPos, rotatedPos), weightBias));
+                    vx4 = SIMD.Float32x4.add(vx4, SIMD.Float32x4.mul(SIMD.Float32x4.add(jointPos, rotatedPos), weightBias));
 
                     // Rotate Normal
-                    var weightNormal = SIMD.float32x4.load(weigthsData, weightsOffset + 5);
-                    ix4 = SIMD.float32x4.sub(
-                        SIMD.float32x4.add(
-                            SIMD.float32x4.mul(SIMD.float32x4.mul(SIMD.float32x4.swizzle(jointOrient, 3, 3, 3, 0), tempx4),
-                                               SIMD.float32x4.swizzle(weightNormal, 0, 1, 2, 0)),
-                            SIMD.float32x4.mul(SIMD.float32x4.mul(SIMD.float32x4.swizzle(jointOrient, 1, 2, 0, 1), tempx4),
-                                               SIMD.float32x4.swizzle(weightNormal, 2, 0, 1, 1))),
-                        SIMD.float32x4.mul(SIMD.float32x4.swizzle(jointOrient, 2, 0, 1, 2),
-                                           SIMD.float32x4.swizzle(weightNormal, 1, 2, 0, 2)));
+                    var weightNormal = SIMD.Float32x4.load(weigthsData, weightsOffset + 5);
+                    ix4 = SIMD.Float32x4.sub(
+                        SIMD.Float32x4.add(
+                            SIMD.Float32x4.mul(SIMD.Float32x4.mul(SIMD.Float32x4.swizzle(jointOrient, 3, 3, 3, 0), tempx4),
+                                               SIMD.Float32x4.swizzle(weightNormal, 0, 1, 2, 0)),
+                            SIMD.Float32x4.mul(SIMD.Float32x4.mul(SIMD.Float32x4.swizzle(jointOrient, 1, 2, 0, 1), tempx4),
+                                               SIMD.Float32x4.swizzle(weightNormal, 2, 0, 1, 1))),
+                        SIMD.Float32x4.mul(SIMD.Float32x4.swizzle(jointOrient, 2, 0, 1, 2),
+                                           SIMD.Float32x4.swizzle(weightNormal, 1, 2, 0, 2)));
 
-                    rotatedPos = SIMD.float32x4.add(
-                        SIMD.float32x4.sub(SIMD.float32x4.mul(ix4, SIMD.float32x4.swizzle(jointOrient, 3, 3, 3, 0)),
-                                           SIMD.float32x4.mul(SIMD.float32x4.swizzle(ix4, 3, 3, 3, 0), jointOrient)),
-                        SIMD.float32x4.sub(SIMD.float32x4.mul(SIMD.float32x4.swizzle(ix4, 2, 0, 1, 0), SIMD.float32x4.swizzle(jointOrient, 1, 2, 0, 0)),
-                                           SIMD.float32x4.mul(SIMD.float32x4.swizzle(ix4, 1, 2, 0, 0), SIMD.float32x4.swizzle(jointOrient, 2, 0, 1, 0))));
+                    rotatedPos = SIMD.Float32x4.add(
+                        SIMD.Float32x4.sub(SIMD.Float32x4.mul(ix4, SIMD.Float32x4.swizzle(jointOrient, 3, 3, 3, 0)),
+                                           SIMD.Float32x4.mul(SIMD.Float32x4.swizzle(ix4, 3, 3, 3, 0), jointOrient)),
+                        SIMD.Float32x4.sub(SIMD.Float32x4.mul(SIMD.Float32x4.swizzle(ix4, 2, 0, 1, 0), SIMD.Float32x4.swizzle(jointOrient, 1, 2, 0, 0)),
+                                           SIMD.Float32x4.mul(SIMD.Float32x4.swizzle(ix4, 1, 2, 0, 0), SIMD.Float32x4.swizzle(jointOrient, 2, 0, 1, 0))));
 
-                    nx4 = SIMD.float32x4.add(nx4, SIMD.float32x4.mul(rotatedPos, weightBias))
+                    nx4 = SIMD.Float32x4.add(nx4, SIMD.Float32x4.mul(rotatedPos, weightBias))
 
                     // Rotate Tangent
-                    var weightTangent = SIMD.float32x4.load(weigthsData, weightsOffset + 9);
-                    ix4 = SIMD.float32x4.sub(
-                        SIMD.float32x4.add(
-                            SIMD.float32x4.mul(SIMD.float32x4.mul(SIMD.float32x4.swizzle(jointOrient, 3, 3, 3, 0), tempx4),
-                                               SIMD.float32x4.swizzle(weightTangent, 0, 1, 2, 0)),
-                            SIMD.float32x4.mul(SIMD.float32x4.mul(SIMD.float32x4.swizzle(jointOrient, 1, 2, 0, 1), tempx4),
-                                               SIMD.float32x4.swizzle(weightTangent, 2, 0, 1, 1))),
-                        SIMD.float32x4.mul(SIMD.float32x4.swizzle(jointOrient, 2, 0, 1, 2),
-                                           SIMD.float32x4.swizzle(weightTangent, 1, 2, 0, 2)));
+                    var weightTangent = SIMD.Float32x4.load(weigthsData, weightsOffset + 9);
+                    ix4 = SIMD.Float32x4.sub(
+                        SIMD.Float32x4.add(
+                            SIMD.Float32x4.mul(SIMD.Float32x4.mul(SIMD.Float32x4.swizzle(jointOrient, 3, 3, 3, 0), tempx4),
+                                               SIMD.Float32x4.swizzle(weightTangent, 0, 1, 2, 0)),
+                            SIMD.Float32x4.mul(SIMD.Float32x4.mul(SIMD.Float32x4.swizzle(jointOrient, 1, 2, 0, 1), tempx4),
+                                               SIMD.Float32x4.swizzle(weightTangent, 2, 0, 1, 1))),
+                        SIMD.Float32x4.mul(SIMD.Float32x4.swizzle(jointOrient, 2, 0, 1, 2),
+                                           SIMD.Float32x4.swizzle(weightTangent, 1, 2, 0, 2)));
 
-                    rotatedPos = SIMD.float32x4.add(
-                        SIMD.float32x4.sub(SIMD.float32x4.mul(ix4, SIMD.float32x4.swizzle(jointOrient, 3, 3, 3, 0)),
-                                           SIMD.float32x4.mul(SIMD.float32x4.swizzle(ix4, 3, 3, 3, 0), jointOrient)),
-                        SIMD.float32x4.sub(SIMD.float32x4.mul(SIMD.float32x4.swizzle(ix4, 2, 0, 1, 0), SIMD.float32x4.swizzle(jointOrient, 1, 2, 0, 0)),
-                                           SIMD.float32x4.mul(SIMD.float32x4.swizzle(ix4, 1, 2, 0, 0), SIMD.float32x4.swizzle(jointOrient, 2, 0, 1, 0))));
+                    rotatedPos = SIMD.Float32x4.add(
+                        SIMD.Float32x4.sub(SIMD.Float32x4.mul(ix4, SIMD.Float32x4.swizzle(jointOrient, 3, 3, 3, 0)),
+                                           SIMD.Float32x4.mul(SIMD.Float32x4.swizzle(ix4, 3, 3, 3, 0), jointOrient)),
+                        SIMD.Float32x4.sub(SIMD.Float32x4.mul(SIMD.Float32x4.swizzle(ix4, 2, 0, 1, 0), SIMD.Float32x4.swizzle(jointOrient, 1, 2, 0, 0)),
+                                           SIMD.Float32x4.mul(SIMD.Float32x4.swizzle(ix4, 1, 2, 0, 0), SIMD.Float32x4.swizzle(jointOrient, 2, 0, 1, 0))));
 
-                    tx4 = SIMD.float32x4.add(tx4, SIMD.float32x4.mul(rotatedPos, weightBias))
+                    tx4 = SIMD.Float32x4.add(tx4, SIMD.Float32x4.mul(rotatedPos, weightBias))
                 }
 
                 // Position
-                SIMD.float32x4.store(vertArray, vertOffset, vx4);
+                SIMD.Float32x4.store(vertArray, vertOffset, vx4);
 
                 // TexCoord
-                SIMD.float32x4.store(vertArray, vertOffset + 3, SIMD.float32x4.load(vert.texCoord, 0));
+                SIMD.Float32x4.store(vertArray, vertOffset + 3, SIMD.Float32x4.load(vert.texCoord, 0));
 
                 // Normal
-                SIMD.float32x4.store(vertArray, vertOffset + 5, nx4);
+                SIMD.Float32x4.store(vertArray, vertOffset + 5, nx4);
 
                 // Tangent
-                SIMD.float32x4.store(vertArray, vertOffset + 8, tx4);
+                SIMD.Float32x4.store(vertArray, vertOffset + 8, tx4);
             }
         }
     };
